@@ -1,170 +1,209 @@
-// 1. 기본설정 : 캔버스 가져오기
-// HTML에서 id가 gameCanvas인 요소를 찾아서 변수에 저장
-const canvas = document.getElementById('gameCanvas');
-
-// 2D 그래픽을 그릴 수 있는 도구(context)를 가져오기
-const ctx = canvas.getContext('2d');
-
-// 2. 캐릭터 만들기
-// 사용자 객체 생성
-const player = {
-    x : 100,
-    y : 100,
-    width : 341,     // 캐릭터 한 프레임의 실제 너비(이미지 파일 내)
-    height : 512,    // 캐릭터 한 프레임의 실제 높이(이미지 파일 내)
-    speed : 2,      // 속도 조절
-    
-    // 화면에 표시될 크기
-    displayWidth : 34.1,
-    displayHeight : 51.2,
-
-    // 애니메이션 속성 추가
-    frameX : 0,     // 현재 보여줄 프레임의 가로 순번
-    frameY : 0,     // 현재 보여줄 프레임의 세로 순번
-    maxFrame : 1,   // 한 동작의 최대 프레임 수
-    directionOffsetX : 0,   // 방향에 따른 X축 시작점 오프셋
-    moving : false, // 현재 움직이고 있는지 여부
-
-    // 애니메이션 속도 조절
-    fps : 10,                   // 1초에 보여줄 프레임 수
-    frameTimer : 0,
-    frameInterval : 1000 / 10   // 각 프레임을 보여줄 시간 간격 (ms단위)
-};
-
-// 사용자 객체에 이미지 불러오기
-// 캐릭터 이미지를 로드하기 위한 Image 객체 생성
-const playerImage = new Image();
-playerImage.src = 'player.png';
-
-// 3. 키보드 입력 상태 저장하기
-// 입력한 키의 상태를 저장할 객체
-const keys = {
-    w : false,
-    a : false,
-    s : false,
-    d : false
-};
-
-// 키보드를 눌렀을 때 이벤트 처리
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'w' || e.key === 'W') keys.w = true;
-    if (e.key === 'a' || e.key === 'A') keys.a = true;
-    if (e.key === 's' || e.key === 'S') keys.s = true;
-    if (e.key === 'd' || e.key === 'D') keys.d = true;
-});
-
-// 키보드에서 손을 땠을 때 이벤트 처리
-window.addEventListener('keyup', (e) => {
-    if (e.key === 'w' || e.key === 'W') keys.w = false;
-    if (e.key === 'a' || e.key === 'A') keys.a = false;
-    if (e.key === 's' || e.key === 'S') keys.s = false;
-    if (e.key === 'd' || e.key === 'D') keys.d = false;
-});
-
-// 게임 루프 만들기
-// 게임의 모든 것을 하나로 합쳐서 1초에 약 60번씩 반복 실행하는 함수 작성
-// 1. 캐릭터 위치 업데이트 함수
-function update() {
-    player.moving = false;  // 매 프레임마다 움직임 상태를 멈춤으로 초기화
-
-    // keys 객체의 상태에 따라 player의 x, y 좌표를 변경
-    if (keys.w) {
-        player.y -= player.speed;
-        player.frameY = 0;          // 위쪽 방향
-        player.directionOffsetX = 1;    // 윗줄의 첫 번째 세트
-        player.moving = true;
-    } else if (keys.s) {
-        player.y += player.speed;
-        player.frameY = 0;          // 아래쪽 방향
-        player.directionOffsetX = 0;
-        player.moving = true;
-    } else if (keys.a) {
-        player.x -= player.speed;
-        player.frameY = 1;          // 왼쪽 방향
-        player.directionOffsetX = 1;
-        player.moving = true;
-    } else if (keys.d) {
-        player.x += player.speed;
-        player.frameY = 0;          // 오른쪽 방향
-        player.directionOffsetX = 0;
-        player.moving = true;
-    }
-
-    // 캐릭터 위치 이동 지역 제한
-    // 화면 왼쪽 경계 체크
-    if (player.x < 0) {
-        player.x = 0;
-    }
-    // 화면 오른쪽 경계 체크
-    if (player.x + player.displayWidth > canvas.width) {
-        player.x = canvas.width - player.displayWidth;
-    }
-
-    // 화면 위쪽 경계 체크
-    if (player.y < 0) {
-        player.y = 0;
-    }
-    // 화면 아래쪽 경계 체크
-    if (player.y + player.displayHeight > canvas.height) {
-        player.y = canvas.height - player.displayHeight;
-    }
-}
-
-// 2. 화면을 그리는 함수
-function draw() {
-    // 잔상이 남지 않도록 매번 캔버스를 깨끗하게 지우는 기능
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 사용자의 위치와 크기대로 이미지를 불러옴.
-    // 9개의 인수를 사용하는 drawImage로 변경
-    ctx.drawImage(
-        playerImage,
-        (player.directionOffsetX + player.frameX) * player.width,   // 원본 이미지에서 자를 부분의 x좌표
-        player.frameY * player.height,  // 원본 이미지에서 자를 부분의 y좌표
-        player.width,                   // 자를 부분의 너비
-        player.height,                  // 자를 부분의 높이
-        player.x,                       // 캔버스에 그릴 위치의 x좌표
-        player.y,                       // 캔버스에 그릴 위치의 y좌표
-        player.displayWidth,                   // 캔버스에 그려질 이미지의 너비
-        player.displayHeight                   // 캔버스에 그려질 이미지의 높이
-    );
-}
-
-// 3. 메인 게임 루프
-let lastTime = 0;   // gameLoop 함수 안에서 프레임 간의 시간 차이(deltaTime)를 계산하기 위해 사용하는 변수
-function gameLoop(timestamp) {  // timestamp는 requestAnimationFrame이 자동으로 전달
-    const deltaTime = timestamp - lastTime;
-    lastTime = timestamp;
-
-    update();   // 캐릭터 상태 업데이트
-    handlePlayerFrame(deltaTime);   // 애니메이션 함수를 deltaTime과 함께 호출
-    draw();     // 화면에 그리기
-
-    // 다음 프레임에 gameLoop 함수를 다시 실행하도록 요청(애니메이션)
-    requestAnimationFrame(gameLoop);
-}
-
-// 4. 애니메이션 처리 함수
-function handlePlayerFrame(deltaTime) {
-    if (player.moving) {
-        // 프레임 타이머가 설정된 간격보다 커지면 프레임을 바꿈
-        if (player.frameTimer > player.frameInterval) {
-            if (player.frameX < player.maxFrame) {
-                player.frameX++;    // 다음 프레임으로
-            } else {
-                player.frameX = 0;  // 프레임 순환
-            }
-            player.frameTimer = 0;  // 타이머 초기화
-        } else {
-            player.frameTimer += deltaTime;
-        }
-    } else {
-        // 멈춰있을 때는 항상 첫 번째 프레임으로 고정(걷지 않는 기본 자세)
-        player.frameX = 0;
-    }
-}
-
-// 최초에 한 번 게임 루프를 실행해서 게임 시작
 window.onload = function() {
-    gameLoop(0);    // 첫 시작 시 timestamp를 0으로 초기화
+    
+    // 1. 기본 설정
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // 2. 네이버 지도 초기화
+    const startLat = 37.563188;
+    const startLng = 127.192642;
+
+    const mapOptions = {
+        center: new naver.maps.LatLng(startLat, startLng),
+        zoom: 21,
+        minZoom: 21,
+        zoomControl: false,
+        mapDataControl: false,
+        scaleControl: false
+    };
+
+    const map = new naver.maps.Map('map', mapOptions);
+
+    // 3. 캐릭터 설정
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        width: 341, // 원본 프레임 너비
+        height: 512, // 원본 프레임 높이
+        speed: 1,
+        
+        displayWidth: 34.1,
+        displayHeight: 51.2,
+
+        // 애니메이션 속성
+        frameX: 0, frameY: 0, maxFrame: 1, directionOffsetX: 0, moving: false,
+        fps: 10, frameTimer: 0, frameInterval: 1000 / 10
+    };
+
+    // 충돌 영역 데이터
+    // 통과 불가능한 지역들을 new naver.maps.LatLnBounds() 형태로 추가
+    const collisionBounds = [
+        new naver.maps.LatLngBounds(
+            new naver.maps.LatLng(37.562280, 127.191840),
+            new naver.maps.LatLng(37.562862, 127.192749)
+        )
+    ];
+
+    const playerImage = new Image();
+    playerImage.src = 'player.png';
+
+    // 4. 키보드 입력
+    const keys = { w: false, a: false, s: false, d: false };
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'w' || e.key === 'W') keys.w = true;
+        if (e.key === 'a' || e.key === 'A') keys.a = true;
+        if (e.key === 's' || e.key === 'S') keys.s = true;
+        if (e.key === 'd' || e.key === 'D') keys.d = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'w' || e.key === 'W') keys.w = false;
+        if (e.key === 'a' || e.key === 'A') keys.a = false;
+        if (e.key === 's' || e.key === 'S') keys.s = false;
+        if (e.key === 'd' || e.key === 'D') keys.d = false;
+    });
+
+
+    // 충돌 검사 헬퍼 함수
+    // 주어진 위도/경도 좌표가 충돌 영역에 포함되는지 검사하는 함수
+    function isColliding(latlng) {
+        // 만약 latlng 계산에 실패해 null 등이 들어오면 충돌하지 않은 것으로 처리
+        if (!latlng) return false;
+
+        for (const bound of collisionBounds) {
+            if (bound.hasLatLng(latlng)) {
+                // console.log("충돌 감지!");      // 개발자 도구에서 충돌 여부 확인 용도
+                return true;                   // 충돌 영역 중 하나라도 포함되면 즉시 true 반환
+            }
+        }
+        return false;   // 모든 충돌 영역을 통과하면 false 반환
+    }
+
+    // 5. 캐릭터 위치 및 맵 업데이트 함수
+    function update() {
+        const moveX = (keys.a ? -player.speed : 0) + (keys.d ? player.speed : 0);
+        const moveY = (keys.w ? -player.speed : 0) + (keys.s ? player.speed : 0);
+
+        player.moving = (moveX !== 0 || moveY !== 0);
+        if (!player.moving) return;
+
+        // 충돌 검사 로직
+        // 캐릭터가 이동할 다음 화면상 위치 계산
+        const nextPlayerX = player.x + moveX;
+        const nextPlayerY = player.y + moveY;
+
+        // 충돌 검사용 좌표 변환 (canvas -> map DOM offset)
+        const mapContainer = document.getElementById('map');
+        const rect = mapContainer.getBoundingClientRect();
+
+        // 캐릭터의 발 밑의 다음 위치 계산
+        const collisionCheckPoint = new naver.maps.Point(
+            rect.left + nextPlayerX + (player.displayWidth / 2),
+            rect.top + nextPlayerY + player.displayHeight
+        );
+
+        // 다음 위치의 화면 픽셀을 실제 위도/경도로 변환
+        const nextLatLng = map.getProjection().fromOffsetToCoord(collisionCheckPoint);
+
+        // 다음 좌표가 충돌 영역에 포함되면, 모든 움직임을 취소하고 함수 종료
+        if (isColliding(nextLatLng)) {
+            player.moving = false;
+            return;
+        }
+    
+        // 애니메이션 방향 설정
+        if (keys.w) { player.frameY = 0; player.directionOffsetX = 0; }
+        else if (keys.s) { player.frameY = 0; player.directionOffsetX = 0; }
+        else if (keys.a) { player.frameY = 0; player.directionOffsetX = 0; }
+        else if (keys.d) { player.frameY = 0; player.directionOffsetX = 0; }
+    
+        const borderX = canvas.width * 0.35;
+        const borderY = canvas.height * 0.35;
+    
+        let playerMoveX = moveX;
+        let playerMoveY = moveY;
+        let mapMoveX = 0;
+        let mapMoveY = 0;
+    
+        const playerLeft = player.x;
+        const playerRight = player.x + player.displayWidth;
+        const playerTop = player.y;
+        const playerBottom = player.y + player.displayHeight;
+
+        if (moveX < 0 && playerLeft + moveX < borderX) {
+            playerMoveX = 0;
+            mapMoveX = moveX;
+        }
+        if (moveX > 0 && playerRight + moveX > canvas.width - borderX) {
+            playerMoveX = 0;
+            mapMoveX = moveX;
+        }
+        if (moveY < 0 && playerTop + moveY < borderY) {
+            playerMoveY = 0;
+            mapMoveY = moveY;
+        }
+        if (moveY > 0 && playerBottom + moveY > canvas.height - borderY) {
+            playerMoveY = 0;
+            mapMoveY = moveY;
+        }
+    
+        player.x += playerMoveX;
+        player.y += playerMoveY;
+
+        if (mapMoveX !== 0 || mapMoveY !== 0) {
+            // 지도는 픽셀 단위 이동만큼 부드럽게 스크롤
+            map.panBy(new naver.maps.Point(mapMoveX, mapMoveY));
+        }
+    }
+
+    // 6. 그리기 함수
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+            playerImage,
+            (player.directionOffsetX + player.frameX) * player.width,
+            player.frameY * player.height,
+            player.width, player.height,
+            player.x, // player.x를 캐릭터의 좌상단 꼭짓점으로 사용
+            player.y, // player.y를 캐릭터의 좌상단 꼭짓점으로 사용
+            player.displayWidth, player.displayHeight
+        );
+    }
+
+    // 7. 메인 게임 루프와 애니메이션 처리 함수
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+        const deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
+        update();
+        handlePlayerFrame(deltaTime);
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handlePlayerFrame(deltaTime) {
+        if (player.moving) {
+            if (player.frameTimer > player.frameInterval) {
+                if (player.frameX < player.maxFrame) player.frameX++;
+                else player.frameX = 0;
+                player.frameTimer = 0;
+            } else {
+                player.frameTimer += deltaTime;
+            }
+        } else {
+            player.frameX = 0;
+        }
+    }
+
+    // 게임 시작
+    gameLoop(0);
+
+    // 지도 크기 재조정
+    setTimeout(function() {
+        map.setSize(new naver.maps.Size(window.innerWidth, window.innerHeight));
+    }, 100);
+
+    // console.log("collisionBounds[0]", collisionBounds[0]);
+    // console.log("contains test", collisionBounds[0].contains(new naver.maps.LatLng(37.5625, 127.1922)));
 };

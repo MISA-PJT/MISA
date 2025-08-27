@@ -1,27 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MISA TEST</title>
+
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wwhsup5plz"></script>
+
     <style>
-        /* 화면 정중앙에 캔버스를 배치하기 위한 스타일 */
-        body { margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
+        /* html과 body가 화면 전체를 사용하도록 명시적으로 설정 */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;   /* 스크롤바 생성 방지 */
         }
 
-        canvas { border: 1px solid black;
+        /* 화면 전체를 채우는 지도를 담는 div */
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;     /* 맨 아래에 위치 */
+        }
+
+        /* 캔버스는 지도 위에 투명하게 겹침. */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2; /* 지도보다 위에 위치 */
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
     
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-
+    <div id="map"></div>
+    <canvas id="gameCanvas"></canvas>
     <script src="game.js"></script>
     
 </body>
