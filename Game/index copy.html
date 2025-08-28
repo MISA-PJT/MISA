@@ -8,34 +8,36 @@
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wwhsup5plz"></script>
 
     <style>
-        /* 페이지 여백을 제거하고 스크롤을 숨겨 전체 화면 게임처럼 보이게 함.*/
-        body {
+        /* html과 body가 화면 전체를 사용하도록 명시적으로 설정 */
+        html, body {
+            width: 100%;
+            height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;   /* 스크롤바 생성 방지 */
         }
 
-        /* 지도 컨테이너를 화면에 꽉 채우고, 캔버스의 부모(기준점)가 되도록 relative 속성 부여 */
+        /* 화면 전체를 채우는 지도를 담는 div */
         #map {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
+            z-index: 1;     /* 맨 아래에 위치 */
         }
 
-        /* 게임 캔버스를 지도 위에 절대 위치로 배치하여 정확히 겹치게 함. */
+        /* 캔버스는 지도 위에 투명하게 겹침. */
         #gameCanvas {
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1; /* 지도보다 위에 위치 */
+            z-index: 2; /* 지도보다 위에 위치 */
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
     
-    <div id="map">
-        <canvas id="gameCanvas"></canvas>
-    </div>
+    <div id="map"></div>
+    <canvas id="gameCanvas"></canvas>
     <script src="game.js"></script>
     
 </body>
