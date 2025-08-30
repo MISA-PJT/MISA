@@ -13,7 +13,7 @@ window.onload = function() {
     const mapOptions = {
         center: new naver.maps.LatLng(startLat, startLng),
         zoom: 21,
-        minZoom: 10,
+        minZoom: 18,
         zoomControl: false,
         mapDataControl: false,
         scaleControl: false
@@ -27,10 +27,10 @@ window.onload = function() {
         y: canvas.height / 2,
         width: 341, // 원본 프레임 너비
         height: 512, // 원본 프레임 높이
-        speed: 1,
+        speed: 2,
         
-        displayWidth: 34.1,
-        displayHeight: 51.2,
+        displayWidth: 68,
+        displayHeight: 102,
 
         // 애니메이션 속성
         frameX: 0, frameY: 0, maxFrame: 1, directionOffsetX: 0, moving: false,
