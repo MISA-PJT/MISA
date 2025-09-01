@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MISA TEST</title>
+
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=wwhsup5plz"></script>
+
+    <style>
+        /* 페이지 여백을 제거하고 스크롤을 숨겨 전체 화면 게임처럼 보이게 함.*/
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;   /* 스크롤바 생성 방지 */
+        }
+
+        /* 지도 컨테이너를 화면에 꽉 채우고, 캔버스의 부모(기준점)가 되도록 relative 속성 부여 */
+        #map {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 게임 캔버스를 지도 위에 절대 위치로 배치하여 정확히 겹치게 함. */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; /* 지도보다 위에 위치 */
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="map">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script src="game.js"></script>
+    
+</body>
+</html>
