@@ -39,8 +39,8 @@ window.onload = function() {
         width: 341,
         height: 512,
         speed: 1, // 픽셀 속도
-        displayWidth: 34.1,
-        displayHeight: 51.2,
+        displayWidth: 17.05,
+        displayHeight: 25.6,
         frameX: 0,
         frameY: 0,
         maxFrame: 1,
@@ -68,15 +68,15 @@ window.onload = function() {
     const polygon = new naver.maps.Polygon({
         map,
         paths: [[
-            new naver.maps.LatLng(37.562248, 127.191800),
-            new naver.maps.LatLng(37.5626172, 127.1916813),
-            new naver.maps.LatLng(37.5628274, 127.1925065),
-            new naver.maps.LatLng(37.5627529, 127.1925374),
+            new naver.maps.LatLng(37.562299, 127.191770),
+            new naver.maps.LatLng(37.5626272, 127.191620),
+            new naver.maps.LatLng(37.5628500, 127.1925065),
+            // new naver.maps.LatLng(37.5627529, 127.1925374),
             new naver.maps.LatLng(37.5627675, 127.1925935),
-            new naver.maps.LatLng(37.5626665, 127.1928481),
-            new naver.maps.LatLng(37.5625933, 127.1928747),
-            new naver.maps.LatLng(37.5625406, 127.1926911),
-            new naver.maps.LatLng(37.5625075, 127.1927061)
+            new naver.maps.LatLng(37.5626865, 127.1927981),
+            new naver.maps.LatLng(37.5625705, 127.1928647),
+            // new naver.maps.LatLng(37.5625406, 127.1926911),
+            // new naver.maps.LatLng(37.5625075, 127.1927061)
         ]],
         strokeColor: '#FF0000',
         strokeOpacity: 0.8,
