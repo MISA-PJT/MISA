@@ -24,7 +24,6 @@ window.onload = function() {
 
 
     /**
-     * 건물 이미지 추가용
      * CustomOverlay 클래스 정의
      * @param {Object} options 생성자 옵션
      * @param {naver.maps.Map} options.map 지도 인스턴스
@@ -83,77 +82,6 @@ window.onload = function() {
         return this._bounds;
     };
 
-    // 폴리곤 오버레이 - 건물 이미지 추가용
-    function PolygonImageOverlay(options) {
-        this.map = options.map;
-        this.imageUrl = options.imageUrl;
-        this.polygon = options.polygon;
-
-        this._element = document.createElement('div');
-        this._element.style.position = 'absolute';
-        this._element.style.pointerEvents = 'none'; 
-
-        this.setMap(this.map || null);
-    };
-
-    PolygonImageOverlay.prototype = new naver.maps.OverlayView();
-    PolygonImageOverlay.prototype.constructor = PolygonImageOverlay;
-
-    PolygonImageOverlay.prototype.onAdd = function() {
-        this.getPanes().overlayLayer.appendChild(this._element);
-    };
-
-    PolygonImageOverlay.prototype.draw = function() {
-        if (!this.getMap()) return;
-        const projection = this.getProjection();
-        const path = this.polygon.getPaths().getAt(0);
-
-        let points = [];
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-        for (let i = 0; i < path.getLength(); i++) {
-            const latlng = path.getAt(i);
-            const offset = projection.fromCoordToOffset(latlng);
-            points.push([offset.x, offset.y]);
-
-            minX = Math.min(minX, offset.x);
-            minY = Math.min(minY, offset.y);
-            maxX = Math.max(maxX, offset.x);
-            maxY = Math.max(maxY, offset.y);
-        }
-
-        const width = maxX - minX;
-        const height = maxY - minY;
-
-        // 다각형 좌표를 bounding box 기준 local 좌표로 변환
-        const localPoints = points.map(p => `${p[0] - minX},${p[1] - minY}`).join(" ");
-
-        // 랜덤/고유 ID 부여 (clipPath 충돌 방지)
-        const clipId = `clip-${Math.random().toString(36).substr(2, 9)}`;
-
-        this._element.innerHTML = `
-            <svg width="${width}" height="${height}" 
-                style="position:absolute; left:${minX}px; top:${minY}px">
-                <defs>
-                    <clipPath id="${clipId}">
-                        <polygon points="${localPoints}" />
-                    </clipPath>
-                </defs>
-                <image href="${this.imageUrl}" 
-                    width="${width}" height="${height}" 
-                    clip-path="url(#${clipId})" 
-                    preserveAspectRatio="none" />
-            </svg>
-        `;
-    };
-
-    PolygonImageOverlay.prototype.onRemove = function() {
-        if (this._element.parentNode) {
-            this._element.parentNode.removeChild(this._element);
-        }
-    };
-
-
     // map.setMapTypeId(naver.maps.MapTypeId.SATELLITE);    // 위성 지도 타입 설정, 커스텀 맵 타입 사용으로 폐기
 
     // 지도 이벤트: 팬/줌 후 bounds 재계산
@@ -168,11 +96,11 @@ window.onload = function() {
     const player = {
         lat: startLat,
         lng: startLng,
-        width: 224,
-        height: 224,
+        width: 341,
+        height: 512,
         speed: 0.5, // 픽셀 속도
-        displayWidth: 44.8,
-        displayHeight: 44.8,
+        displayWidth: 17.05,
+        displayHeight: 25.6,
         frameX: 0,
         frameY: 0,
         maxFrame: 1,
@@ -181,8 +109,8 @@ window.onload = function() {
         fps: 10,
         frameTimer: 0,
         frameInterval: 1000 / 10,
-        collisionWidth: 50,
-        collisionHeight: 50
+        collisionWidth: 28,
+        collisionHeight: 16
     };
 
     // degree per pixel (줌 21 고정, 로그에서 계산)
@@ -211,18 +139,17 @@ window.onload = function() {
         strokeOpacity: 0.8,
         strokeWeight: 2,
         fillColor: '#FF0000',
-        fillOpacity: 0
+        fillOpacity: 0.25
     });
-
-    // 건물 이미지 추가
-    // 다각형 모양으로 이미지 꽉 채워서 표시
-    new PolygonImageOverlay({
-        map:map,
-        imageUrl: 'building4.png',
-        polygon: polygon
-    });
-
     collisionPolygons.push(polygon);
+    // 폴리곤의 경계 영역 계산
+    // const buildingBounds = polygon.getBounds();
+    // CustomOverlay를 생성하고, 준비한 건물 이미지를 연결해 지도에 추가
+    // const buildingOverlay = new CustomOverlay({
+    //     map: map,
+    //     imageUrl: 'building3.png',
+    //     bounds: buildingBounds
+    // });
     collisionPolygons.forEach(poly => {
         poly.precomputedBounds = poly.getBounds();
     });
@@ -315,16 +242,16 @@ window.onload = function() {
 
         // 애니메이션 방향 설정 (기존)
         if (keys.w) {
-            player.frameY = 3; // 위
+            player.frameY = 0; // 위
             player.directionOffsetX = 0;
         } else if (keys.s) {
             player.frameY = 0; // 아래
             player.directionOffsetX = 0;
         } else if (keys.a) {
-            player.frameY = 1; // 왼쪽
+            player.frameY = 0; // 왼쪽
             player.directionOffsetX = 0;
         } else if (keys.d) {
-            player.frameY = 2; // 오른쪽
+            player.frameY = 0; // 오른쪽
             player.directionOffsetX = 0;
         }
 
