@@ -22,140 +22,6 @@ window.onload = function() {
     };
     const map = new naver.maps.Map('map', mapOptions);
 
-
-    /**
-     * 건물 이미지 추가용
-     * CustomOverlay 클래스 정의
-     * @param {Object} options 생성자 옵션
-     * @param {naver.maps.Map} options.map 지도 인스턴스
-     * @param {string} options.imageUrl 표시할 이미지의 URL
-     * @param {naver.maps.LatLngBounds} options.bounds 이미지가 표시될 영역
-     */
-    function CustomOverlay(options) {
-        this._element = document.createElement('div');
-        this._element.style.position = 'absolute';
-        this._element.style.pointerEvents = 'none'; // 이미지가 클릭되지 않도록 설정
-
-        const img = document.createElement('img');
-        img.src = options.imageUrl;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        this._element.appendChild(img);
-
-        this.setPosition(options.bounds);
-        this.setMap(options.map || null);
-    }
-
-    CustomOverlay.prototype = new naver.maps.OverlayView();
-    CustomOverlay.prototype.constructor = CustomOverlay;
-
-    CustomOverlay.prototype.onAdd = function() {
-        this.getPanes().overlayLayer.appendChild(this._element);
-    };
-
-    CustomOverlay.prototype.draw = function() {
-        if (!this.getMap()) return;
-        
-        const projection = this.getProjection();
-        const position = this.getPosition();
-        const sw = projection.fromCoordToOffset(position.getSW());
-        const ne = projection.fromCoordToOffset(position.getNE());
-        
-        const width = ne.x - sw.x;
-        const height = sw.y - ne.y;
-
-        this._element.style.left = sw.x + 'px';
-        this._element.style.top = ne.y + 'px';
-        this._element.style.width = width + 'px';
-        this._element.style.height = height + 'px';
-    };
-
-    CustomOverlay.prototype.onRemove = function() {
-        this._element.parentElement.removeChild(this._element);
-    };
-
-    CustomOverlay.prototype.setPosition = function(bounds) {
-        this._bounds = bounds;
-        this.draw();
-    };
-
-    CustomOverlay.prototype.getPosition = function() {
-        return this._bounds;
-    };
-
-    // 폴리곤 오버레이 - 건물 이미지 추가용
-    function PolygonImageOverlay(options) {
-        this.map = options.map;
-        this.imageUrl = options.imageUrl;
-        this.polygon = options.polygon;
-
-        this._element = document.createElement('div');
-        this._element.style.position = 'absolute';
-        this._element.style.pointerEvents = 'none'; 
-
-        this.setMap(this.map || null);
-    };
-
-    PolygonImageOverlay.prototype = new naver.maps.OverlayView();
-    PolygonImageOverlay.prototype.constructor = PolygonImageOverlay;
-
-    PolygonImageOverlay.prototype.onAdd = function() {
-        this.getPanes().overlayLayer.appendChild(this._element);
-    };
-
-    PolygonImageOverlay.prototype.draw = function() {
-        if (!this.getMap()) return;
-        const projection = this.getProjection();
-        const path = this.polygon.getPaths().getAt(0);
-
-        let points = [];
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-        for (let i = 0; i < path.getLength(); i++) {
-            const latlng = path.getAt(i);
-            const offset = projection.fromCoordToOffset(latlng);
-            points.push([offset.x, offset.y]);
-
-            minX = Math.min(minX, offset.x);
-            minY = Math.min(minY, offset.y);
-            maxX = Math.max(maxX, offset.x);
-            maxY = Math.max(maxY, offset.y);
-        }
-
-        const width = maxX - minX;
-        const height = maxY - minY;
-
-        // 다각형 좌표를 bounding box 기준 local 좌표로 변환
-        const localPoints = points.map(p => `${p[0] - minX},${p[1] - minY}`).join(" ");
-
-        // 랜덤/고유 ID 부여 (clipPath 충돌 방지)
-        const clipId = `clip-${Math.random().toString(36).substr(2, 9)}`;
-
-        this._element.innerHTML = `
-            <svg width="${width}" height="${height}" 
-                style="position:absolute; left:${minX}px; top:${minY}px">
-                <defs>
-                    <clipPath id="${clipId}">
-                        <polygon points="${localPoints}" />
-                    </clipPath>
-                </defs>
-                <image href="${this.imageUrl}" 
-                    width="${width}" height="${height}" 
-                    clip-path="url(#${clipId})" 
-                    preserveAspectRatio="none" />
-            </svg>
-        `;
-    };
-
-    PolygonImageOverlay.prototype.onRemove = function() {
-        if (this._element.parentNode) {
-            this._element.parentNode.removeChild(this._element);
-        }
-    };
-
-
-    // map.setMapTypeId(naver.maps.MapTypeId.SATELLITE);    // 위성 지도 타입 설정, 커스텀 맵 타입 사용으로 폐기
-
     // 지도 이벤트: 팬/줌 후 bounds 재계산
     naver.maps.Event.addListener(map, 'idle', function() {
         collisionPolygons.forEach(poly => {
@@ -182,15 +48,27 @@ window.onload = function() {
         frameTimer: 0,
         frameInterval: 1000 / 10,
         collisionWidth: 50,
-        collisionHeight: 50
+        collisionHeight: 50,
+
+        equippedWepon: null, // 현재 장착한 무기 정보
+
+        // 공격 이펙트 관련 추가 속성
+        isAttacking: false,
+        attackEffectFramX: 0,
+        attackEffectMaxFrame: 2,    // 이펙트 스트라이프 시트의 최대 프레임(인덱스)
+        attackEffectFps: 20,        // 이펙트가 빠르게 지나가도록 FPS 높임
+        attackEffectFrameTimer: 0,
+        attackEffectFrameInterval: 1000 / 20,
+
+        attackDirection: 'down'     // 공격 방향 (무기 위치 및 이펙트 위치에 활용)
     };
 
-    // degree per pixel (줌 21 고정, 로그에서 계산)
+    // degree per pixel (줌 19 고정, 로그에서 계산)
     const delta_lat_per_pixel = -0.000002125; // south (Y+) decreases lat // 줌 21 : -0.00000053125;
     const delta_lng_per_pixel = 0.0000026856; // east (X+) increases lng // 줌 21 : 0.0000006714;
 
     const playerImage = new Image();
-    playerImage.src = 'player2.png';
+    playerImage.src = 'player3.png';
     playerImage.onload = function() {
         console.log(`Image size: ${playerImage.width}x${playerImage.height}`);
     };
@@ -212,14 +90,6 @@ window.onload = function() {
         strokeWeight: 2,
         fillColor: '#FF0000',
         fillOpacity: 0
-    });
-
-    // 건물 이미지 추가
-    // 다각형 모양으로 이미지 꽉 채워서 표시
-    new PolygonImageOverlay({
-        map:map,
-        imageUrl: 'building4.png',
-        polygon: polygon
     });
 
     collisionPolygons.push(polygon);
@@ -264,12 +134,6 @@ window.onload = function() {
         }
         return false;
     }
-
-    // 줌이 변경될 수 있는 경우 delta 동적 계산 코드
-    // const zoom = map.getZoom();
-    // const delta_lng_per_pixel = 360 / (256 * Math.pow(2, zoom));
-    // const delta_lat_per_pixel = -delta_lng_per_pixel * Math.cos(player.lat * Math.PI / 180);
-
 
     // 5. 캐릭터 위치 및 맵 업데이트 함수 (LatLng 기반 리팩토링)
     function update() {
@@ -336,43 +200,6 @@ window.onload = function() {
         player.canvasX = (canvas.width / 2) - (player.displayWidth / 2);
         player.cavasY = (canvas.height / 2) - (player.displayHeight / 2);
 
-        // LatLng -> 캔버스 픽셀 계산 및 맵 패닝
-        // const projection = map.getProjection();
-        // const center = map.getCenter();
-        // const centerOffset = projection.fromCoordToOffset(center);
-        // const playerLatLng = new naver.maps.LatLng(player.lat, player.lng);
-        // const playerOffset = projection.fromCoordToOffset(playerLatLng);
-        // let playerX = (playerOffset.x - centerOffset.x) + (canvas.width / 2);
-        // let playerY = (playerOffset.y - centerOffset.y) + (canvas.height / 2);
-
-        // const borderX = canvas.width * 0.35;
-        // const borderY = canvas.height * 0.35;
-        // let mapMoveX = 0;
-        // let mapMoveY = 0;
-
-        // if (playerX < borderX) {
-        //     mapMoveX = playerX - borderX;
-        //     playerX = borderX;
-        // } else if (playerX + player.displayWidth > canvas.width - borderX) {
-        //     mapMoveX = playerX + player.displayWidth - (canvas.width - borderX);
-        //     playerX = canvas.width - borderX - player.displayWidth;
-        // }
-        // if (playerY < borderY) {
-        //     mapMoveY = playerY - borderY;
-        //     playerY = borderY;
-        // } else if (playerY + player.displayHeight > canvas.height - borderY) {
-        //     mapMoveY = playerY + player.displayHeight - (canvas.height - borderY);
-        //     playerY = canvas.height - borderY - player.displayHeight;
-        // }
-
-        // if (mapMoveX !== 0 || mapMoveY !== 0) {
-        //     isPanning = true;
-        //     map.panBy(new naver.maps.Point(mapMoveX, mapMoveY));
-        // }
-
-        // 플레이어 위치 저장 (드로잉용)
-        // player.canvasX = playerX;
-        // player.canvasY = playerY;
     }
 
     // 6. 그리기 함수 (캔버스 픽셀 사용)
