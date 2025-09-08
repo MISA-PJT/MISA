@@ -340,22 +340,22 @@ window.onload = function() {
         if (player.isAttacking) {
             let effectOffsetX = 0;
             let effectOffsetY = 0;
-            let effectWidth = player.displayWidth * 1.5;    // 이펙트 크기 조절
-            let effectHeight = player.displayHeight * 1.5;
+            let effectWidth = player.displayWidth * 2.5;    // 이펙트 크기 조절
+            let effectHeight = player.displayHeight * 2.5;
 
             // 공격 방향에 따라 이펙트 위치 조정(이펙트 이미지의 형태에 따라 조절 필요)
             if (player.attackDirection === 'down') {
-                effectOffsetX = -player.displayWidth * 0.2;
-                effectOffsetY = player.displayHeight * 0.8;
+                effectOffsetX = -player.displayWidth * 0.4;
+                effectOffsetY = player.displayHeight * 0.2;
             } else if (player.attackDirection === 'left') {
-                effectOffsetX = -player.displayWidth * 0.8;
-                effectOffsetY = player.displayHeight * 0.2;
+                effectOffsetX = -player.displayWidth * 1.6;
+                effectOffsetY = player.displayHeight * -0.6;
             } else if (player.attackDirection === 'right') {
-                effectOffsetX = player.displayWidth * 0.3;
-                effectOffsetY = player.displayHeight * 0.2;
+                effectOffsetX = player.displayWidth * 0.8;
+                effectOffsetY = player.displayHeight * -0.6;
             } else if (player.attackDirection === 'up') {
                 effectOffsetX = -player.displayWidth * 0.2;
-                effectOffsetY = -player.displayHeight * 0.5;
+                effectOffsetY = -player.displayHeight * 1.6;
             }
 
             if (attackEffectImage.width >0) {
