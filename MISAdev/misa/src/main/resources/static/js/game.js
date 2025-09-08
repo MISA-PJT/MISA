@@ -307,12 +307,30 @@ window.onload = function() {
             // 공격 중일 때 회전 적용
             if (player.isAttacking) {
                 let rotationAngle = 0;
-                if (player.attackDirection === 'right' || player.attackDirection === 'up') {
-                    rotationAngle = Math.PI / 2;    // 시계 방향 90도
-                } else if (player.attackDirection === 'left' || player.attackDirection === 'down') {
-                    rotationAngle = -Math.PI / 2;   // 반시계 방향 90도
+                let finalTranslateX = 0;    // 회전 후 추가로 이동할 X 좌표
+                let finalTranslateY = 0;    // 회전 후 추가로 이동할 Y 좌표
+
+                // 공격 방향에 따라 회전 각도 및 이동 값 설정
+                if(player.attackDirection === 'down') {
+                    rotationAngle = Math.PI / -2; // 아래 방향은 기본 각도
+                    finalTranslateX = -weapon.displayWidth * 0.6;
+                    finalTranslateY = weapon.displayHeight * 0.0;
+                } else if (player.attackDirection === 'left') {
+                    rotationAngle = -Math.PI / 3.5;
+                    finalTranslateX = -weapon.displayWidth * 0.3;
+                    finalTranslateY = -weapon.displayHeight * -0.3;
+                } else if (player.attackDirection === 'right') {
+                    rotationAngle = Math.PI / 3.5;
+                    finalTranslateX = weapon.displayWidth * 0.4;
+                    finalTranslateY = -weapon.displayHeight * -0.1;
+                } else if (player.attackDirection === 'up') {
+                    rotationAngle = Math.PI / -3.8;
+                    finalTranslateX = -weapon.displayWidth * -0.1;
+                    finalTranslateY = -weapon.displayHeight * 0.4;
                 }
+
                 ctx.rotate(rotationAngle);
+                ctx.translate(finalTranslateX, finalTranslateY);    // 회전 후 추가 위치 조정
             }
 
             // 무기 그리기
