@@ -312,9 +312,9 @@ window.onload = function() {
 
                 // 공격 방향에 따라 회전 각도 및 이동 값 설정
                 if(player.attackDirection === 'down') {
-                    rotationAngle = Math.PI / -2; // 아래 방향은 기본 각도
-                    finalTranslateX = -weapon.displayWidth * 0.6;
-                    finalTranslateY = weapon.displayHeight * 0.0;
+                    rotationAngle = Math.PI / -1.3; // 아래 방향은 기본 각도
+                    finalTranslateX = -weapon.displayWidth * 0.75;
+                    finalTranslateY = weapon.displayHeight * -0.35;
                 } else if (player.attackDirection === 'left') {
                     rotationAngle = -Math.PI / 3.5;
                     finalTranslateX = -weapon.displayWidth * 0.3;
