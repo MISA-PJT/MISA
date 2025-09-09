@@ -1,4 +1,4 @@
-package com.misa.config;
+package com.misa;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
