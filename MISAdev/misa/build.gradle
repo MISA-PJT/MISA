@@ -30,8 +30,8 @@ dependencies {
     testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.5'
 //    testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+//    compileOnly 'org.projectlombok:lombok'    // lombok 미사용
+//    annotationProcessor 'org.projectlombok:lombok'    // lombok 미사용
 }
 
 tasks.named('test') {
