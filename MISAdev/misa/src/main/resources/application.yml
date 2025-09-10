@@ -2,8 +2,8 @@ spring:
   datasource:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://localhost:3306/
-      username: ***REMOVED***
-      password: ***REMOVED***
+      username: ""
+      password: ""
 
 mybatis:
     mapper-locations: mappers/**/*.xml

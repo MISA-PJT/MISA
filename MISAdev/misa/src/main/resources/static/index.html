@@ -7,14 +7,28 @@
 
     <link rel="stylesheet" href="/css/style.css">
 
-    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=***REMOVED***"></script>
 </head>
 <body>
     
     <div id="map">
         <canvas id="gameCanvas"></canvas>
     </div>
-    <script src="/js/game.js"></script>
+    <script src="/js/apiKey.js"></script>
+
+    <script>
+        function initMap() {
+            console.log("네이버 지도 API 로딩 완료");
+
+            const gameScript = document.createElement('script');
+            gameScript.src = '/js/game.js';
+            document.body.appendChild(gameScript);
+        }
+
+        const mapScript = document.createElement('script');
+        mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_API_KEY}&submodules=gl&callback=initMap`;
+        mapScript.async = true;
+        document.head.appendChild(mapScript);
+    </script>
     
 </body>
 </html>
