@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.misa.monster.repository.MonsterMapper">
+
+    <resultMap id="monsterResultMap" type="com.misa.monster.dto.MonsterDTO">
+        <id property="monsterCode" column="monster_code"/>
+        <result property="monsterName" column="monster_name"/>
+        <result property="hp" column="monster_hp"/>
+        <result property="ap" column="monster_ap"/>
+        <result property="dp" column="monster_dp"/>
+        <result property="latitude" column="latitude"/>
+        <result property="longitude" column="longitude"/>
+    </resultMap>
+
+    <select id="findAllMonsters" resultMap="monsterResultMap">
+        select
+              a.monster_code,
+              a.monster_name,
+              a.monster_hp,
+              a.monster_ap,
+              a.monster_dp,
+              b.latitude,
+              b.longitude
+          from tbl_monster a
+          join tbl_monster_spawn b on a.monster_code = b.monster_code
+    </select>
+
+</mapper>
