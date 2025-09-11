@@ -5,6 +5,11 @@
 
 <mapper namespace="com.misa.monster.repository.MonsterMapper">
 
+    <resultMap id="monsterDropResultMap" type="com.misa.monster.dto.MonsterDropDTO">
+        <result property="itemCode" column="item_code"/>
+        <result property="dropRate" column="drop_rate"/>
+    </resultMap>
+
     <resultMap id="monsterResultMap" type="com.misa.monster.dto.MonsterDTO">
         <id property="monsterCode" column="monster_code"/>
         <result property="monsterName" column="monster_name"/>
@@ -13,6 +18,7 @@
         <result property="dp" column="monster_dp"/>
         <result property="latitude" column="latitude"/>
         <result property="longitude" column="longitude"/>
+        <collection property="dropList" resultMap="monsterDropResultMap"/>
     </resultMap>
 
     <select id="findAllMonsters" resultMap="monsterResultMap">
@@ -23,9 +29,12 @@
               a.monster_ap,
               a.monster_dp,
               b.latitude,
-              b.longitude
+              b.longitude,
+              c.item_code,
+              c.drop_rate
           from tbl_monster a
           join tbl_monster_spawn b on a.monster_code = b.monster_code
+          left join tbl_monster_drop_list c on a.monster_code = c.monster_code
     </select>
 
 </mapper>

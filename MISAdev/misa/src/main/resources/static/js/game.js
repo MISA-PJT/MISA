@@ -1,154 +1,257 @@
-window.onload = function() {
+let monsters = [];  // 모든 몬스터 객체를 담을 배열
+let player;
+
+// Custom Map 미적용 오류 해결 : window.onload -> startGame function
+function startGame() {
     // 1. 기본 설정
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    setTimeout(function () {
     // 2. 네이버 지도 초기화
-    const startLat = 37.563188;
-    const startLng = 127.192642;
-    const mapOptions = {
-        gl: true,
-        center: new naver.maps.LatLng(startLat, startLng),
-        zoom: 19,
-        minZoom: 19,
-        zoomControl: false,
-        mapDataControl: false,
-        scaleControl: false,
-        logoControl: false,
-        mapTypeControl: false,
-        customStyleId: 'fa582bd4-5cbb-4c9f-b934-079dc4a5d231'
-    };
-    const map = new naver.maps.Map('map', mapOptions);
+        const startLat = 37.563188;
+        const startLng = 127.192642;
+        const mapOptions = {
+            gl: true,
+            center: new naver.maps.LatLng(startLat, startLng),
+            zoom: 19,
+            minZoom: 19,
+            zoomControl: false,
+            mapDataControl: false,
+            scaleControl: false,
+            logoControl: false,
+            mapTypeControl: false,
+            customStyleId: 'fa582bd4-5cbb-4c9f-b934-079dc4a5d231'
+        };
+        const map = new naver.maps.Map('map', mapOptions);
 
-    // 지도 이벤트: 팬/줌 후 bounds 재계산
-    naver.maps.Event.addListener(map, 'idle', function() {
-        collisionPolygons.forEach(poly => {
-            poly.precomputedBounds = poly.getBounds();
-        });
-        console.log('Map idle: bounds updated');
-    });
+        // 게임에 필요한 모든 객체들을 선언
+        let playerImage;
+        let weaponImage;
+        let attackEffectImage;
+        let sword;
+        const collisionPolygons = [];
+        const keys = { w: false, a: false, s: false, d: false };
+        // degree per pixel (줌 19 고정, 로그에서 계산)
+        const delta_lat_per_pixel = -0.000002125; // south (Y+) decreases lat // 줌 21 : -0.00000053125;
+        const delta_lng_per_pixel = 0.0000026856; // east (X+) increases lng // 줌 21 : 0.0000006714;
 
-    // 3. 캐릭터 설정 (LatLng 기반으로 변경)
-    const player = {
-        lat: startLat,
-        lng: startLng,
-        width: 224,
-        height: 224,
-        speed: 0.5, // 픽셀 속도
-        displayWidth: 44.8,
-        displayHeight: 44.8,
-        frameX: 0,
-        frameY: 0,
-        maxFrame: 1,
-        directionOffsetX: 0,
-        moving: false,
-        fps: 10,
-        frameTimer: 0,
-        frameInterval: 1000 / 10,
-        collisionWidth: 50,
-        collisionHeight: 50,
 
-        equippedWeapon: null, // 현재 장착한 무기 정보
 
-        // 공격 이펙트 관련 추가 속성
-        isAttacking: false,
-        attackEffectFrameX: 0,
-        attackEffectMaxFrame: 2,    // 이펙트 스트라이프 시트의 최대 프레임(인덱스)
-        attackEffectFps: 20,        // 이펙트가 빠르게 지나가도록 FPS 높임
-        attackEffectFrameTimer: 0,
-        attackEffectFrameInterval: 1000 / 20,
+        // 충돌 영역 초기화 함수
+        function initializeCollision() {
+            const polygon = new naver.maps.Polygon({
+                map,
+                paths: [[
+                    new naver.maps.LatLng(37.562299, 127.191770),
+                    new naver.maps.LatLng(37.5626272, 127.191620),
+                    new naver.maps.LatLng(37.5628500, 127.1925065),
+                    new naver.maps.LatLng(37.5627675, 127.1925935),
+                    new naver.maps.LatLng(37.5626865, 127.1927981),
+                    new naver.maps.LatLng(37.5625705, 127.1928647),
+                ]],
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#FF0000',
+                fillOpacity: 0
+            });
+            collisionPolygons.push(polygon);
 
-        attackDirection: 'down'     // 공격 방향 (무기 위치 및 이펙트 위치에 활용)
-    };
+            // precomputedBounds를 즉시 초기화하는 코드 추가
+            collisionPolygons.forEach(poly => {
+                poly.precomputedBounds = poly.getBounds();
+            });
 
-    // degree per pixel (줌 19 고정, 로그에서 계산)
-    const delta_lat_per_pixel = -0.000002125; // south (Y+) decreases lat // 줌 21 : -0.00000053125;
-    const delta_lng_per_pixel = 0.0000026856; // east (X+) increases lng // 줌 21 : 0.0000006714;
-
-    // 캐릭터 이미지
-    const playerImage = new Image();
-    playerImage.src = '/images/player3.png';
-    playerImage.onload = function() {
-        console.log(`Image size: ${playerImage.width}x${playerImage.height}`);
-    };
-
-    // 무기 이미지
-    const weaponImage = new Image();
-    weaponImage.src = '/images/sword2.png';
-
-    // 무기 정보 객체 생성
-    const sword = {
-        image: weaponImage,
-        width: 1024,
-        height: 1024,
-        displayWidth: 44.8,
-        displayHeight: 44.8
-    };
-
-    // 게임 시작 시 무기 기본 장착(테스트용)
-    player.equippedWeapon = sword;
-
-    // 공격 이펙트 이미지
-    const attackEffectImage = new Image();
-    attackEffectImage.src = '/images/attack_effect1.png';
-
-    // 충돌 영역 데이터 (기존 유지)
-    const collisionPolygons = [];
-    const polygon = new naver.maps.Polygon({
-        map,
-        paths: [[
-            new naver.maps.LatLng(37.562299, 127.191770),
-            new naver.maps.LatLng(37.5626272, 127.191620),
-            new naver.maps.LatLng(37.5628500, 127.1925065),
-            new naver.maps.LatLng(37.5627675, 127.1925935),
-            new naver.maps.LatLng(37.5626865, 127.1927981),
-            new naver.maps.LatLng(37.5625705, 127.1928647),
-        ]],
-        strokeColor: '#FF0000',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#FF0000',
-        fillOpacity: 0
-    });
-
-    collisionPolygons.push(polygon);
-    collisionPolygons.forEach(poly => {
-        poly.precomputedBounds = poly.getBounds();
-    });
-
-    // 4. 키보드 입력 (기존 유지)
-    const keys = { w: false, a: false, s: false, d: false };
-    window.addEventListener('keydown', (e) => {
-        const key = e.key.toLowerCase();
-        if (['w', 'a', 's', 'd'].includes(key)) keys[key] = true;
-
-        // 공격
-        if (e.key.toLowerCase() === 'k' && !player.isAttacking) {
-            player.isAttacking = true;
-            player.attackEffectFramX = 0;
-            player.attackEffectFrameTimer = 0;
-
-            // 현재 플레이어의 방향을 공격 방향으로 저장
-            if (keys.w) player.attackDirection = 'up';
-            else if (keys.s) player.attackDirection = 'down';
-            else if (keys.a) player.attackDirection = 'left';
-            else if (keys.d) player.attackDirection = 'right';
-            else {
-                // 사용자가 마지막으로 입력한 이동 키를 기준으로 공격 방향 설정
-                if (player.frameY === 0) player.attackDirection = 'down';
-                else if (player.frameY === 1) player.attackDirection = 'left';
-                else if (player.frameY === 2) player.attackDirection = 'right';
-                else if (player.frameY === 3) player.attackDirection = 'up';
-            }
-            console.log("공격 시작! 방향 : ", player.attackDirection);
+            // 지도 이벤트: 팬/줌 후 bounds 재계산
+            naver.maps.Event.addListener(map, 'idle', function() {
+                collisionPolygons.forEach(poly => {
+                    poly.precomputedBounds = poly.getBounds();
+                });
+                console.log('Map idle: bounds updated');
+            });
         }
-    });
-    window.addEventListener('keyup', (e) => {
-        const key = e.key.toLowerCase();
-        if (['w', 'a', 's', 'd'].includes(key)) keys[key] = false;
-    });
+
+        // collisionPolygons.forEach(poly => {
+        //     poly.precomputedBounds = poly.getBounds();
+        // });
+
+        // 이벤트 리스너 설정 함수
+        function setupEventListeners() {
+
+            window.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 'a', 's', 'd'].includes(key)) keys[key] = true;
+
+                // 공격
+                if (e.key.toLowerCase() === 'k' && !player.isAttacking) {
+                    player.isAttacking = true;
+                    player.attackEffectFramX = 0;
+                    player.attackEffectFrameTimer = 0;
+
+                    // 현재 플레이어의 방향을 공격 방향으로 저장
+                    if (keys.w) player.attackDirection = 'up';
+                    else if (keys.s) player.attackDirection = 'down';
+                    else if (keys.a) player.attackDirection = 'left';
+                    else if (keys.d) player.attackDirection = 'right';
+                    else {
+                        // 사용자가 마지막으로 입력한 이동 키를 기준으로 공격 방향 설정
+                        if (player.frameY === 0) player.attackDirection = 'down';
+                        else if (player.frameY === 1) player.attackDirection = 'left';
+                        else if (player.frameY === 2) player.attackDirection = 'right';
+                        else if (player.frameY === 3) player.attackDirection = 'up';
+                    }
+                    console.log("공격 시작! 방향 : ", player.attackDirection);
+
+                    // 공격 판정 추가
+                    const attackRange = 100; // 사용자 공격 사거리
+                    const attackWidth = 50; // 사용자 공격 폭
+
+                    monsters.forEach(monster => {
+                        if (monster.state !== 'dead') { // 살아있는 몬스터만 대상으로 판정
+                            const distance = getDistance(
+                                player.canvasX,
+                                player.canvasY,
+                                monster.canvasX,
+                                monster.canvasY
+                            );
+
+                            // 몬스터가 공격 범위 내에 있을 경우 공격
+                            if (distance < attackRange) {
+                                let isAttackSuccess = false;    // 공격 성공 여부 플래그
+                                // 몬스터가 플레이어 기준으로 어느 방향에 있는지 계산
+                                const dx = monster.canvasX - player.canvasX;
+                                const dy = monster.canvasY - player.canvasY;
+
+                                // 플레이어의 공격 방향에 따라 공격 성공 여부 판정
+                                switch (player.attackDirection) {
+                                    case 'up':
+                                        // 몬스터가 위쪽에 위치(이하 공통 적용 : 상,하 = 좌우, 좌,우 = 상하 공격 폭 안에 있을 때)
+                                        if (dy < 0 && Math.abs(dx) < attackWidth) isAttackSuccess = true;
+                                        break;
+                                    case 'down':
+                                        //몬스터가 아래쪽에 위치
+                                        if (dy > 0 && Math.abs(dx) < attackWidth) isAttackSuccess = true;
+                                        break;
+                                    case 'left':
+                                        // 몬스터가 왼쪽에 위치
+                                        if (dx < 0 && Math.abs(dy) < attackWidth) isAttackSuccess = true;
+                                        break;
+                                    case 'right':
+                                        // 몬스터가 오른쪽에 위치
+                                        if (dx > 0 && Math.abs(dy) < attackWidth) isAttackSuccess = true;
+                                        break;
+                                }
+
+                                if (isAttackSuccess) {
+                                    monster.hp -= player.ap;
+                                    console.log(`${monster.name}에게 ${player.ap}의 데미지! 남은 HP: ${monster.hp}`);
+
+                                    // 몬스터 처치 판정
+                                    if (monster.hp <= 0) {
+                                        monster.hp = 0;
+                                        monster.state = 'dead';
+                                        console.log(`${monster.name}을(를) 처치했습니다!`);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (['w', 'a', 's', 'd'].includes(key)) keys[key] = false;
+            });
+        }
+
+    // 게임 로직 함수들 위치 이동 -250911
+
+    // 사용자 데이터 로딩 함수 -250911
+    async function loadPlayer(userId) {
+        try {
+            const response = await fetch(`/api/characters/${userId}`);  // 서버 API 호출
+            if (!response.ok) {
+                throw new Error(`캐릭터 정보를 찾을 수 없습니다. : ${response.status}`);
+            }
+            const playerData = await response.json();
+
+            // 서버에서 받은 데이터로 사용자 객체 생성
+            player = {
+                id: playerData.userId,
+                lat: 37.563188,
+                lng: 127.192642,
+                hp: playerData.characterHp,
+                currentHp: playerData.currentHp,
+                ap: playerData.characterAp,
+                dp: playerData.characterDp,
+                // 렌더링에 필요한 클라이언트 측 속성
+                width: 224,
+                height: 224,
+                speed: 0.5,
+                displayWidth: 44.8,
+                displayHeight: 44.8,
+                frameX: 0,
+                frameY: 0,
+                maxFrame: 1,
+                directionOffsetX: 0,
+                moving: false,
+                fps: 10,
+                frameTimer: 0,
+                frameInterval: 1000 / 10,
+                collisionWidth: 50,
+                collisionHeight: 50,
+
+                equippedWeapon: null, // 현재 장착한 무기 정보
+
+                // 공격 이펙트 관련 추가 속성
+                isAttacking: false,
+                attackEffectFrameX: 0,
+                attackEffectMaxFrame: 2,    // 이펙트 스트라이프 시트의 최대 프레임(인덱스)
+                attackEffectFps: 20,        // 이펙트가 빠르게 지나가도록 FPS 높임
+                attackEffectFrameTimer: 0,
+                attackEffectFrameInterval: 1000 / 20,
+
+                attackDirection: 'down'     // 공격 방향 (무기 위치 및 이펙트 위치에 활용)
+            };
+            console.log("사용자 데이터 로딩 완료", player);
+        } catch (error) {
+            console.error("사용자 로딩 실패 : ", error);
+        }
+    }
+
+    // 몬스터 데이터 로딩 함수 (비동기) -250911
+    async function loadMonsters() {
+        try {
+            const response = await fetch('/api/monsters');  // 서버 API 호출
+            const serverMonsters = await response.json();
+
+            monsters = serverMonsters.map(data => ({
+                id: data.monsterCode,
+                name: data.monsterName,
+                lat: data.latitude,
+                lng: data.longitude,
+                hp: data.hp,
+                maxHp: data.hp,
+                image: new Image(),
+                // 클라이언트 렌더링에 필요한 추가 속성
+                canvasX: 0,
+                canvasY: 0,
+                displayWidth: 40,
+                displayHeight: 40,
+                state: 'idle'
+            }));
+
+            // 각 몬스터 이미지 경로 설정 및 로드
+            monsters.forEach(m => m.image.src = `/images/${m.id}.png`);
+            console.log("몬스터 로딩 완료 : ", monsters);
+
+        } catch (error) {
+            console.error("몬스터 로딩 실패 : ", error);
+        }
+    }
 
     // 충돌 검사 헬퍼 함수 (기존 유지, 로그 추가)
     function pointInPolygon(latlng, polygon) {
@@ -178,10 +281,25 @@ window.onload = function() {
     }
 
     // 5. 캐릭터 위치 및 맵 업데이트 함수 (LatLng 기반 리팩토링)
+    // 몬스터 위치 계산 로직 추가 -250911
     function update() {
         const moveX = (keys.a ? -player.speed : 0) + (keys.d ? player.speed : 0);
         const moveY = (keys.w ? -player.speed : 0) + (keys.s ? player.speed : 0);
         player.moving = (moveX !== 0 || moveY !== 0);
+
+        // 몬스터 위치 계산
+        const projection = map.getProjection();
+        const playerOffset = projection.fromCoordToOffset(new naver.maps.LatLng(player.lat, player.lng));
+
+        monsters.forEach(monster => {
+            const monsterOffset = projection.fromCoordToOffset(new naver.maps.LatLng(monster.lat, monster.lng));
+            const relativeX = monsterOffset.x - playerOffset.x;
+            const relativeY = monsterOffset.y - playerOffset.y;
+
+            // 플레이어 중심으로부터의 상대 위치 계산
+            monster.canvasX = player.canvasX + relativeX;
+            monster.canvasY = player.canvasY + relativeY;
+        });
 
         // 수정 : 캐릭터가 멈춰있어도 맵 패닝이 필요하므로 return 제거
         // if (!player.moving) return; // 팬닝 중 이동 스킵 -> 이동 로직 항상 실행
@@ -247,6 +365,7 @@ window.onload = function() {
     }
 
     // 6. 그리기 함수 (캔버스 픽셀 사용)
+    // 몬스터 그리기 로직 추가 -250911
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -354,6 +473,26 @@ window.onload = function() {
             ctx.restore();
         }
 
+        // 몬스터 그리기
+        // 살아있는 몬스터만 그리기
+        monsters.forEach(monster => {
+            if (monster.state !== 'dead' && monster.image.complete) {
+                ctx.drawImage(
+                    monster.image,
+                    monster.canvasX - monster.displayWidth / 2, // 중심점 기준으로 그리기
+                    monster.canvasY - monster.displayHeight / 2,
+                    monster.displayWidth,
+                    monster.displayHeight
+                );
+
+                // 몬스터 HP 바 그리기
+                ctx.fillStyle = 'red';
+                ctx.fillRect(monster.canvasX - monster.displayWidth / 2, monster.canvasY - monster.displayHeight / 2 - 10, monster.displayWidth, 5);
+                ctx.fillStyle = 'green';
+                ctx.fillRect(monster.canvasX - monster.displayWidth / 2, monster.canvasY - monster.displayHeight / 2 - 10, monster.displayWidth * (monster.hp / monster.maxHp), 5);
+            }
+        });
+
         // 공격 중일 때 이펙트 그리기 (무기 위에 그려지도록 마지막에 호출)
         if (player.isAttacking) {
             let effectOffsetX = 0;
@@ -440,12 +579,70 @@ window.onload = function() {
         }
     }
 
-    // 게임 시작 (초기 캔버스 위치 계산)
-    const projection = map.getProjection();
-    const centerOffset = projection.fromCoordToOffset(map.getCenter());
-    const playerOffset = projection.fromCoordToOffset(new naver.maps.LatLng(player.lat, player.lng));
-    player.canvasX = (playerOffset.x - centerOffset.x) + (canvas.width / 2);
-    player.canvasY = (playerOffset.y - centerOffset.y) + (canvas.height / 2);
+    // 두 점 사이의 거리를 계산하는 함수(전투)
+    function getDistance(x1, y1, x2, y2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
 
-    gameLoop(0);
+    // 게임 리소스 및 데이터 초기화 함수
+    async function initializeGame() {
+        // API를 통해 플레이어 데이터 로드 및 객체 생성
+        await loadPlayer("misa01");
+
+        // 플레이어 객체가 성공적으로 생성된 후에만 다음 로직 실행
+        if (player) {
+            // 캐릭터 이미지
+            playerImage = new Image();
+            playerImage.src = '/images/player3.png';
+            playerImage.onload = function() {
+                console.log(`Image size: ${playerImage.width}x${playerImage.height}`);
+            };
+
+            // 무기 이미지
+            weaponImage = new Image();
+            weaponImage.src = '/images/sword2.png';
+
+            // 무기 정보 객체 생성
+            sword = {
+                image: weaponImage,
+                width: 1024,
+                height: 1024,
+                displayWidth: 44.8,
+                displayHeight: 44.8
+            };
+
+            // 게임 시작 시 무기 기본 장착(테스트용)
+            player.equippedWeapon = sword;
+
+            // 공격 이펙트 이미지
+            attackEffectImage = new Image();
+            attackEffectImage.src = '/images/attack_effect1.png';
+
+            // 충돌 영역 초기화
+            initializeCollision();
+
+            // 키보드 이벤트 리스너 등록
+            setupEventListeners();
+
+            // 게임 시작 (초기 캔버스 위치 계산)
+            const projection = map.getProjection();
+            const centerOffset = projection.fromCoordToOffset(map.getCenter());
+            const playerOffset = projection.fromCoordToOffset(new naver.maps.LatLng(player.lat, player.lng));
+            player.canvasX = (playerOffset.x - centerOffset.x) + (canvas.width / 2);
+            player.canvasY = (playerOffset.y - centerOffset.y) + (canvas.height / 2);
+
+            // 몬스터 로드
+            await loadMonsters();
+
+            // 모든 준비가 끝나면 게임 루프 시작
+            gameLoop(0);
+
+        }
+    }
+
+    initializeGame();
+
+    }, 0);
 };

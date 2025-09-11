@@ -15,18 +15,17 @@
     </div>
     <script src="/js/apiKey.js"></script>
 
+    <script src="/js/game.js"></script> <!-- Custom Map 미적용 오류 해결 : game.js 우선 로드 -->
+
     <script>
         function initMap() {
             console.log("네이버 지도 API 로딩 완료");
-
-            const gameScript = document.createElement('script');
-            gameScript.src = '/js/game.js';
-            document.body.appendChild(gameScript);
+            startGame();
         }
 
         const mapScript = document.createElement('script');
+        mapScript.type = 'text/javascript';
         mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_API_KEY}&submodules=gl&callback=initMap`;
-        mapScript.async = true;
         document.head.appendChild(mapScript);
     </script>
     
