@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.misa.character.repository.CharacterMapper">
+    <resultMap id="characterResultMap" type="com.misa.character.dto.CharacterDTO">
+        <id property="userId" column="user_id"/>
+        <result property="characterHp" column="character_hp"/>
+        <result property="characterAp" column="character_ap"/>
+        <result property="characterDp" column="character_dp"/>
+    </resultMap>
+
+    <select id="findCharacterById" resultMap="characterResultMap" parameterType="string">
+        select
+               user_id,
+               character_hp,
+               character_ap,
+               character_dp
+          from tbl_character
+         where user_id = #{userId}
+    </select>
+</mapper>
