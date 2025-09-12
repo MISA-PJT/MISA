@@ -11,7 +11,8 @@
     </resultMap>
 
     <resultMap id="monsterResultMap" type="com.misa.monster.dto.MonsterDTO">
-        <id property="monsterCode" column="monster_code"/>
+        <id property="spawnId" column="spawn_id"/>
+        <result property="monsterCode" column="monster_code"/>
         <result property="monsterName" column="monster_name"/>
         <result property="hp" column="monster_hp"/>
         <result property="ap" column="monster_ap"/>
@@ -23,6 +24,7 @@
 
     <select id="findAllMonsters" resultMap="monsterResultMap">
         select
+              b.spawn_id,
               a.monster_code,
               a.monster_name,
               a.monster_hp,

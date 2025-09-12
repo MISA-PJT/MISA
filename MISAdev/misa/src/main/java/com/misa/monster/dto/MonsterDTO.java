@@ -10,6 +10,7 @@ import java.util.List;
 //@AllArgsConstructor // 모든 필드 포함 생성자
 public class MonsterDTO {
 
+    private int spawnId;
     private String monsterCode;
     private String monsterName;
     private int hp;
@@ -25,7 +26,8 @@ public class MonsterDTO {
 
     public MonsterDTO() {}
 
-    public MonsterDTO(String monsterCode, String monsterName, int hp, int ap, int dp, List<MonsterDropDTO> dropList, double latitude, double longitude) {
+    public MonsterDTO(int spawnId, String monsterCode, String monsterName, int hp, int ap, int dp, List<MonsterDropDTO> dropList, double latitude, double longitude) {
+        this.spawnId = spawnId;
         this.monsterCode = monsterCode;
         this.monsterName = monsterName;
         this.hp = hp;
@@ -34,6 +36,14 @@ public class MonsterDTO {
         this.dropList = dropList;
         this.latitude = latitude;
         this.longitude = longitude;
+    }
+
+    public int getSpawnId() {
+        return spawnId;
+    }
+
+    public void setSpawnId(int spawnId) {
+        this.spawnId = spawnId;
     }
 
     public String getMonsterCode() {
@@ -103,7 +113,8 @@ public class MonsterDTO {
     @Override
     public String toString() {
         return "MonsterDTO{" +
-                "monsterCode='" + monsterCode + '\'' +
+                "spawnId=" + spawnId +
+                ", monsterCode='" + monsterCode + '\'' +
                 ", monsterName='" + monsterName + '\'' +
                 ", hp=" + hp +
                 ", ap=" + ap +
