@@ -1,6 +1,8 @@
 package com.misa.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.misa.monster.service.GameService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -13,30 +15,90 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class GameSocketHandler extends TextWebSocketHandler {
 
-    // 접속한 클라이언트(사용자)들을 관리하기 위한 세션 저장소
+    // 연결/종료 관리용 sessions 맵
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+
     private final ObjectMapper objectMapper = new ObjectMapper();   // JSON <-> Java Object 변환기
+    private final GameService gameService;
+
+    @Autowired
+    public GameSocketHandler(GameService gameService) {
+        this.gameService = gameService;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // 클라이언트가 접속하면 세션 저장소에 추가
+
+        // 세션 추가 후 전체 맵 공유
         sessions.put(session.getId(), session);
+        gameService.setSessions(sessions);
+
         System.out.println("클라이언트 접속 : " + session.getId());
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // 클라이언트로부터 메시지를 받으면 호출
-        String payload = message.getPayload();
-        System.out.println("메시지 수신 : " + payload);
 
-        // TODO: 메시지 종류에 따라 로직 처리 (예: 플레이어 이동, 공격)
+        try {
+            // 클라이언트로부터 메시지를 받으면 호출
+            String payload = message.getPayload();
+            System.out.println("메시지 수신 : " + payload);
+
+            Map<String, Object> messageMap = objectMapper.readValue(payload, Map.class);
+            String messageType = (String) messageMap.get("type");
+
+            switch (messageType) {
+                case "PLAYER_ATTACK":
+                    Object spawnIdObj = messageMap.get("targetMonsterSpawnId");
+                    int targetSpawnId;
+                    if (spawnIdObj instanceof String) {
+                        targetSpawnId = Integer.parseInt((String) spawnIdObj);
+                    } else if (spawnIdObj instanceof Integer) {
+                        targetSpawnId = (Integer) spawnIdObj;
+                    } else {
+                        throw new IllegalArgumentException("Invalid targetMonsterSpawnId type : " + spawnIdObj.getClass());
+                    }
+
+                    // GameService에 로직 처리를 위임하고 결과를 받음.
+                    Map<String, Object> attackResult = gameService.processAttack(session.getId(), targetSpawnId);
+
+                    // 모든 사용자에게 공격 결과 브로드캐스팅
+                    if (!attackResult.isEmpty()) {
+                        String resultJson = objectMapper.writeValueAsString(attackResult);
+                        gameService.getSessions().values().stream()
+                                .filter(WebSocketSession::isOpen)
+                                .forEach(s -> {
+                            try {
+                                s.sendMessage(new TextMessage(resultJson));
+                                System.out.println("브로드캐스트 성공 : " + s.getId());
+                            } catch (Exception e) {
+                                System.err.println("Broadcast failed for session " + s.getId() + " : " + e.getMessage());
+                            }
+                        });
+                    }
+                    break;
+                default:
+                    System.out.println("Unknown message type : " + messageType);
+            }
+        } catch (Exception e) {
+            System.err.println("handleTextMessage 예외 발생 : " + e.getMessage());
+            e.printStackTrace();
+            if (session.isOpen()) {
+                try {
+                    String errorMsg = e.getMessage().replace("\"", "\\\"");
+                    session.sendMessage(new TextMessage("{\"type\":\"ERROR\",\"message\":\"" + errorMsg + "\"}"));
+                } catch (Exception sendErr) {
+                    System.err.println("에러 메시지 전송 실패 : " + sendErr.getMessage());
+                }
+            }
+        }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         // 클라이언트 접속이 끊기면 세션 저장소에서 제거
         sessions.remove(session.getId());
+        gameService.setSessions(sessions);  // 업데이트된 맵 공유
         System.out.println("클라이언트 접속 해제 : " + session.getId());
     }
 }
