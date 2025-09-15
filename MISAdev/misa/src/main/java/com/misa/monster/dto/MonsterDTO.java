@@ -16,6 +16,7 @@ public class MonsterDTO {
     private int hp;
     private int ap;
     private int dp;
+    private String state;
 
     // 몬스터가 드랍하는 아이템 목록
     private List<MonsterDropDTO> dropList;
@@ -26,16 +27,25 @@ public class MonsterDTO {
 
     public MonsterDTO() {}
 
-    public MonsterDTO(int spawnId, String monsterCode, String monsterName, int hp, int ap, int dp, List<MonsterDropDTO> dropList, double latitude, double longitude) {
+    public MonsterDTO(int spawnId, String monsterCode, String monsterName, int hp, int ap, int dp, String state, List<MonsterDropDTO> dropList, double latitude, double longitude) {
         this.spawnId = spawnId;
         this.monsterCode = monsterCode;
         this.monsterName = monsterName;
         this.hp = hp;
         this.ap = ap;
         this.dp = dp;
+        this.state = state;
         this.dropList = dropList;
         this.latitude = latitude;
         this.longitude = longitude;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 
     public int getSpawnId() {
@@ -119,6 +129,7 @@ public class MonsterDTO {
                 ", hp=" + hp +
                 ", ap=" + ap +
                 ", dp=" + dp +
+                ", state='" + state + '\'' +
                 ", dropList=" + dropList +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +

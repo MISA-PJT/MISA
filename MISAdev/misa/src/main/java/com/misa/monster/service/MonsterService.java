@@ -23,4 +23,8 @@ public class MonsterService {
         // Mapper의 메소드를 호출하여 DB 조회 결과 반환
         return monsterMapper.findAllMonsters();
     }
+
+    public MonsterDTO findBySpawnId(int targetSpawnId) {
+        return monsterMapper.findAllMonsters().get(targetSpawnId);
+    }
 }

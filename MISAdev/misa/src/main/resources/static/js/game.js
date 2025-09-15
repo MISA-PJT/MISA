@@ -54,13 +54,47 @@ function startGame() {
             socket.onmessage = function (event) {
                 const message = JSON.parse(event.data);
                 console.log("서버로부터 메시지 수신 : ", message);
+
+                if (message.type === "ATTACK_RESULT") {
+                    const targetSpawnId = message.monsterSpawnId;
+                    const monster = monsters.find(m => m.spawnId == targetSpawnId);
+                    if (monster) {
+                        monster.hp = message.newHp;
+                        console.log(`몬스터 ${monster.name}에게 ${message.damage} 데미지! 남은 HP : ${monster.hp}`);
+                        if (monster.hp <= 0) {
+                            monster.state = 'dying';
+                            console.log(`${monster.name}을(를) 처치했습니다!`);
+                        }
+                    }
+                } else if (message.type === "MONSTER_RESPAWN") {
+                    // 리스폰 동기화
+                    const targetSpawnId = message.monsterSpawnId;
+                    const monster = monsters.find(m => m.spawnId == targetSpawnId);
+                    if (monster) {
+                        monster.hp = message.newHp;
+                        monster.state = 'idle';
+                        monster.alpha = 1;
+                        monster.lat = monster.initialLat;
+                        monster.lng = monster.initialLng;
+                        console.log(`${monster.name}이(가) 서버에서 리스폰 되었습니다.`);
+                    }
+                } else if (message.type === "ERROR") {
+                    console.error("서버 에러 : ", message.message);
+
+                }
                 // TODO: 서버가 보낸 데이터 종류에 따라 분기 처리 필요(예: 몬스터 위치 업데이트, 아이템 획득 알림 등)
             };
 
             // WebSocket 연결이 닫혔을 때 이벤트
             socket.onclose = function (event) {
-                console.log("WebSocket 연결이 끊겼습니다.");
-                // TODO: 연결 재시도 로직 추가 필요
+                console.log("WebSocket 연결이 끊겼습니다. 재연결을 시도합니다." + event.code + ", 이유 : " + event.reason);
+                if (player.isAttacking) {
+                    player.isAttacking = false;
+                    player.attackEffectFramX = 0;
+                }
+                setTimeout(function () {
+                    connectWebSocket();
+                }, 2000);
             };
 
             // 에러 발생 시 이벤트
@@ -171,17 +205,21 @@ function startGame() {
                                 }
 
                                 if (isAttackSuccess) {
-                                    const damage = Math.max(1, player.ap - monster.dp);
-                                    monster.hp -= damage;
-                                    console.log(`${monster.name}에게 ${damage}의 데미지! 남은 HP: ${monster.hp}`);
 
-                                    // 몬스터 처치 판정
-                                    if (monster.hp <= 0) {
-                                        monster.hp = 0;
-                                        monster.state = 'dying';
-                                        console.log(`${monster.name}을(를) 처치했습니다!`);
+                                    // 클라이언트에서 직접 HP 감소 -> 서버에 메시지 전송 -250915
+                                    if (socket && socket.readyState === WebSocket.OPEN) {
 
+                                        const attackMessage = {
+                                            type: "PLAYER_ATTACK",
+                                            targetMonsterId: monster.id,
+                                            targetMonsterSpawnId: monster.spawnId
+                                        };
+                                        socket.send(JSON.stringify(attackMessage));
+                                        console.log("공격 메시지 전송 성공 : ", attackMessage);
+                                    } else {
+                                        console.error("WebSocket 연결이 열리지 않아 공격 전송 실패. 재연결 대기 중.")
                                     }
+
                                 }
                             }
                         }
@@ -256,6 +294,7 @@ function startGame() {
                 const serverMonsters = await response.json();
 
                 monsters = serverMonsters.map(data => ({
+                    spawnId: data.spawnId,
                     id: data.monsterCode,
                     name: data.monsterName,
                     lat: data.latitude,
@@ -384,15 +423,6 @@ function startGame() {
                             monster.alpha = 0;
                             monster.state = 'dead'; // 투명도가 0이되면 'dead' 상태로 변경
 
-                            // 리스폰 타이머 설정
-                            setTimeout(() => {
-                                monster.state = 'idle';
-                                monster.hp = monster.maxHp;
-                                monster.lat = monster.initialLat;
-                                monster.lng = monster.initialLng;
-                                monster.alpha = 1;  // 리스폰 시 투명도 복구
-                                console.log(`${monster.name}이(가) 리스폰 되었습니다.`);
-                            }, monster.respawnTime);
                         }
                         break;
                 }
