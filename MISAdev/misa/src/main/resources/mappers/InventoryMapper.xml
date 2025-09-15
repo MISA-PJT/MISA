@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.misa.inventory.repository.InventoryMapper">
+
+    <insert id="addItemOrUpdateQuantity" parameterType="com.misa.inventory.dto.Inventory">
+        insert into tbl_inventory (user_id, item_code, item_quantity)
+        values (#{userId}, #{itemCode}, #{quantity})
+        on duplicate key update
+        item_quantity = item_quantity + values(item_quantity)
+    </insert>
+</mapper>

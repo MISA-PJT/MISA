@@ -135,4 +135,18 @@ public class MonsterDTO {
                 ", longitude=" + longitude +
                 '}';
     }
+
+    // 몬스터 실시간 상태 관리를 위한 복사 생성자 추가 -250915
+    public MonsterDTO(MonsterDTO original) {
+        this.spawnId = original.spawnId;
+        this.monsterCode = original.monsterCode;
+        this.monsterName = original.monsterName;
+        this.hp = original.hp;
+        this.ap = original.ap;
+        this.dp = original.dp;
+        this.dropList = original.dropList;
+        this.latitude = original.latitude;
+        this.longitude = original.longitude;
+        this.state = "idle";
+    }
 }

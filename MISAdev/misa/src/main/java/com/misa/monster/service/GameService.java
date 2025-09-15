@@ -2,11 +2,14 @@ package com.misa.monster.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.misa.monster.dto.MonsterDTO;
+import com.misa.monster.dto.MonsterDropDTO;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -20,6 +23,9 @@ public class GameService {
 
     // sessions 맵 (GameSocketHandler와 공유 - 브로드캐스트용)
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+
+    // 게임 월드에 존재하는 모든 몬스터의 원본 상태를 저장
+    private final Map<Integer, MonsterDTO> monsterPrototypes = new ConcurrentHashMap<>();
 
     // 게임 월드에 존재하는 모든 몬스터의 실시간 상태를 저장
     private final Map<Integer, MonsterDTO> liveMonsters = new ConcurrentHashMap<>();
@@ -47,8 +53,10 @@ public class GameService {
     public void init() {
         // DB 에서 모든 몬스터의 원본 데이터를 불러와 liveMonsters 맵에 저장
         monsterService.findAllMonsters().forEach(monster -> {
-            liveMonsters.put(monster.getSpawnId(), monster);
+            monsterPrototypes.put(monster.getSpawnId(), monster);
+            liveMonsters.put(monster.getSpawnId(), new MonsterDTO(monster));
         });
+        System.out.println("Prototypes loaded : " + monsterPrototypes.size());
         System.out.println("Live-Monsters loaded: " + liveMonsters.size());
     }
 
@@ -137,9 +145,29 @@ public class GameService {
                     if (targetMonster.getHp() <= 0) {
                         System.out.println("몬스터 " + targetSpawnId + " 처치됨.");
 
+                        // DB 조회 대신, 메모리에 있는 원본 몬스터 데이터 사용
+                        MonsterDTO originalMonster = monsterPrototypes.get(targetSpawnId);
+                        if (originalMonster != null) {
+                            scheduleRespawn(targetSpawnId, originalMonster);
+
+                            // 몬스터 아이템 드랍 로직 -250915
+                            List<MonsterDropDTO> droppedItems = new ArrayList<>();
+                            // 몬스터 드랍 테이블을 순회하며 확률 계산
+                            if (originalMonster.getDropList() != null) {
+                                originalMonster.getDropList().forEach(dropInfo -> {
+                                    if (Math.random() * 100 < dropInfo.getDropRate()) {
+                                        droppedItems.add(dropInfo);
+                                    }
+                                });
+                            }
+                            // 드랍된 아이템이 있으면 결과 맵에 추가
+                            if (!droppedItems.isEmpty()) {
+                                result.put("droppedItems", droppedItems);
+                            }
+                        }
                         // 리스폰 스케줄링 (원본 데이터로 복구)
-                        MonsterDTO original = monsterService.findBySpawnId(targetSpawnId);
-                        scheduleRespawn(targetSpawnId, original);
+//                        MonsterDTO original = monsterService.findBySpawnId(targetSpawnId);
+//                        scheduleRespawn(targetSpawnId, original);
                     }
                 } else {
                     System.out.println("Target monster already dead : " + targetSpawnId);

@@ -64,6 +64,11 @@ function startGame() {
                         if (monster.hp <= 0) {
                             monster.state = 'dying';
                             console.log(`${monster.name}을(를) 처치했습니다!`);
+
+                            // 몬스터 아이템 드랍 로직 -250915
+                            if (message.droppedItems && message.droppedItems.length > 0) {
+                                console.log("드랍된 아이템 : ", message.droppedItems);
+                            }
                         }
                     }
                 } else if (message.type === "MONSTER_RESPAWN") {
