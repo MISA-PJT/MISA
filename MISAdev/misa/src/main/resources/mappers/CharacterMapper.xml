@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.misa.character.repository.CharacterMapper">
+<mapper namespace="com.misa.character.dao.CharacterMapper">
     <resultMap id="characterResultMap" type="com.misa.character.dto.CharacterDTO">
         <id property="userId" column="user_id"/>
         <result property="characterHp" column="character_hp"/>

@@ -2,7 +2,7 @@ package com.misa.inventory.service;
 
 import com.misa.inventory.dto.InventoryDTO;
 import com.misa.inventory.dto.InventoryItemDetailDTO;
-import com.misa.inventory.repository.InventoryMapper;
+import com.misa.inventory.dao.InventoryMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

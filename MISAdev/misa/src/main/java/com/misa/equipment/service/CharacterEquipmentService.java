@@ -1,11 +1,10 @@
 package com.misa.equipment.service;
 
-import com.misa.equipment.repository.CharacterEquipmentMapper;
-import com.misa.inventory.dto.InventoryDTO;
-import com.misa.inventory.repository.InventoryMapper;
+import com.misa.equipment.dao.CharacterEquipmentMapper;
 import com.misa.inventory.service.InventoryService;
 import com.misa.item.dto.ItemDTO;
-import com.misa.item.repository.ItemMapper;
+import com.misa.item.dao.ItemMapper;
+import com.misa.monster.service.GameService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +16,16 @@ public class CharacterEquipmentService {
 //    private final InventoryMapper inventoryMapper;
     private final InventoryService inventoryService;
     private final ItemMapper itemMapper;
+    private final GameService gameService;
 
-    public CharacterEquipmentService(CharacterEquipmentMapper equipmentMapper, InventoryService inventoryService, ItemMapper itemMapper) {
+    public CharacterEquipmentService(CharacterEquipmentMapper equipmentMapper,
+                                     InventoryService inventoryService,
+                                     ItemMapper itemMapper,
+                                     GameService gameService) {
         this.equipmentMapper = equipmentMapper;
         this.inventoryService = inventoryService;
         this.itemMapper = itemMapper;
+        this.gameService = gameService;
     }
 
     // 모든 DB 작업을 하나의 트랜잭션으로 처리
@@ -71,6 +75,9 @@ public class CharacterEquipmentService {
         inventoryService.removeItem(userId, itemCode, 1);
         System.out.println("인벤토리 제거 완료.");
 
+        // GameService에 능력치 재계산 요청
+        gameService.recalculatePlayerStats(userId);
+
         /* TODO:
         *   1. 아이템 정보 조회 (장착 부위, 능력치 등)
         *   2. 사용자 인벤토리에 해당 아이템이 있는지 확인
@@ -101,6 +108,10 @@ public class CharacterEquipmentService {
         inventoryService.addItem(userId, itemToUnequip.getItemCode(), 1);
 
         System.out.println(userId + " 님이 " + slotCode + " 부위의 " + itemToUnequip.getItemCode() + " 아이템을 해제했습니다.");
+
+        // GameService에 능력치 재계산 요청
+        gameService.recalculatePlayerStats(userId);
+
         // TODO: GameService와 연동하여 사용자의 실시간 능력치 업데이트
     }
 }

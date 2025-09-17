@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.misa.item.repository.ItemMapper">
+<mapper namespace="com.misa.item.dao.ItemMapper">
 
     <resultMap id="itemResultMap" type="com.misa.item.dto.ItemDTO">
         <id property="itemCode" column="item_code"/>

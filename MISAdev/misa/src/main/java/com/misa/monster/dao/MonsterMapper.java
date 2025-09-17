@@ -1,4 +1,4 @@
-package com.misa.monster.repository;
+package com.misa.monster.dao;
 
 import com.misa.monster.dto.MonsterDTO;
 import org.apache.ibatis.annotations.Mapper;

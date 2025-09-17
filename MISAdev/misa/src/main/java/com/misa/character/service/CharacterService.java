@@ -1,7 +1,7 @@
 package com.misa.character.service;
 
 import com.misa.character.dto.CharacterDTO;
-import com.misa.character.repository.CharacterMapper;
+import com.misa.character.dao.CharacterMapper;
 import org.springframework.stereotype.Service;
 
 @Service

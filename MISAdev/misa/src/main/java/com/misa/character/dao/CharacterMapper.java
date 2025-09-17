@@ -1,4 +1,4 @@
-package com.misa.character.repository;
+package com.misa.character.dao;
 
 import com.misa.character.dto.CharacterDTO;
 import org.apache.ibatis.annotations.Mapper;

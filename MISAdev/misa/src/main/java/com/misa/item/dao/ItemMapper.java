@@ -1,4 +1,4 @@
-package com.misa.item.repository;
+package com.misa.item.dao;
 
 import com.misa.item.dto.ItemDTO;
 import org.apache.ibatis.annotations.Mapper;
