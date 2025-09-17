@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.misa.inventory.repository.InventoryMapper">
+
+    <resultMap id="inventoryDetailResultMap" type="com.misa.inventory.dto.InventoryItemDetailDTO">
+        <result property="itemCode" column="item_code"/>
+        <result property="itemName" column="item_name"/>
+        <result property="itemType" column="item_type"/>
+        <result property="quantity" column="item_quantity"/>
+    </resultMap>
+
+    <select id="findInventoryByUserId" resultMap="inventoryDetailResultMap" parameterType="string">
+        select
+                a.item_code
+              , b.item_name
+              , b.item_type
+              , a.item_quantity
+          from tbl_inventory a
+          join tbl_item b on a.item_code = b.item_code
+         where a.user_id = #{userId}
+    </select>
+
+    <select id="findItemQuantity" resultType="int">
+        select item_quantity
+          from tbl_inventory
+         where user_id = #{userId}
+           and item_code = #{itemCode}
+    </select>
+
+    <insert id="addItemOrUpdateQuantity" parameterType="com.misa.inventory.dto.InventoryDTO">
+        insert into tbl_inventory (user_id, item_code, item_quantity)
+        values (#{userId}, #{itemCode}, #{quantity})
+        on duplicate key update
+        item_quantity = item_quantity + values(item_quantity)
+    </insert>
+
+    <update id="decreaseItemQuantity">
+        update tbl_inventory
+           set item_quantity = item_quantity - #{quantity}
+         where user_id = #{userId}
+           and item_code = #{itemCode}
+           and item_quantity >= #{quantity}
+    </update>
+
+    <delete id="deleteItem">
+        delete from tbl_inventory
+         where user_id = #{userId}
+           and item_code = #{itemCode}
+    </delete>
+</mapper>
