@@ -1,7 +1,7 @@
 package com.misa.monster.service;
 
 import com.misa.monster.dto.MonsterDTO;
-import com.misa.monster.repository.MonsterMapper;
+import com.misa.monster.dao.MonsterMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

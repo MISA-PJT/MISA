@@ -1,7 +1,11 @@
 package com.misa.monster.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.misa.character.dao.CharacterMapper;
+import com.misa.character.dto.CharacterDTO;
+import com.misa.equipment.dao.CharacterEquipmentMapper;
 import com.misa.inventory.service.InventoryService;
+import com.misa.item.dto.ItemDTO;
 import com.misa.monster.dto.MonsterDTO;
 import com.misa.monster.dto.MonsterDropDTO;
 import jakarta.annotation.PostConstruct;
@@ -39,10 +43,24 @@ public class GameService {
     private final Map<Integer, java.util.concurrent.ScheduledFuture<?>> respawnFutures = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
 
-    public GameService(MonsterService monsterService, InventoryService inventoryService, ObjectMapper objectMapper) {
+    // 캐릭터 기본 정보 조회
+    private final CharacterMapper characterMapper;
+
+    // 장착 장비 조회
+    private final CharacterEquipmentMapper equipmentMapper;
+
+    private final Map<String, CharacterDTO> livePlayers = new ConcurrentHashMap<>();
+
+    public GameService(MonsterService monsterService,
+                       InventoryService inventoryService,
+                       ObjectMapper objectMapper,
+                       CharacterMapper characterMapper,
+                       CharacterEquipmentMapper equipmentMapper) {
         this.monsterService = monsterService;
         this.inventoryService= inventoryService;
         this.objectMapper = objectMapper;
+        this.characterMapper = characterMapper;
+        this.equipmentMapper = equipmentMapper;
     }
 
     // GameSocketHandler 에서 sessions 공유를 위한 setter 메소드 (동기화 위해 putAll 사용)
@@ -50,6 +68,73 @@ public class GameService {
         this.sessions.clear();
         this.sessions.putAll(newSessions);
         System.out.println("Sessions 업데이트됨. 총 세션 수 : " + this.sessions.size());
+    }
+
+    // 사용자 접속 메소드
+    public void addPlayer(String sessionId, String userId) {
+        CharacterDTO character = characterMapper.findCharacterById(userId);
+        if (character != null) {
+            livePlayers.put(userId, character);
+            recalculatePlayerStats(userId); // 접속 시 능력치 한번 재계산
+        }
+    }
+
+    // 사용자 접속 종료 메소드
+    public void removePlayer(String userId) {
+        livePlayers.remove(userId);
+    }
+
+    // 사용자의 능력치를 재계산하고 모든 클라이언트에게 업데이트된 정보 전송
+    public void recalculatePlayerStats(String userId) {
+        // DB 에서 사용자 캐릭터의 기본 능력치 적용
+        CharacterDTO baseStats = characterMapper.findCharacterById(userId);
+        if (baseStats == null) return;;
+
+        // 현재 장착 중인 모든 장비 아이템 목록 조회
+        List<ItemDTO> equippedItems = equipmentMapper.findAllEquippedItemsByUserId(userId);
+
+        // 장착 중인 장비 아이템들의 능력치 적용
+        int totalHpBonus = equippedItems.stream().mapToInt(ItemDTO::getItemHp).sum();
+        int totalApBonus = equippedItems.stream().mapToInt(ItemDTO::getItemAp).sum();
+        int totalDpBonus = equippedItems.stream().mapToInt(ItemDTO::getItemDp).sum();
+
+        // 실시간 사용자 캐릭터에 최종 능력치(기본 + 장비)를 업데이트
+        CharacterDTO livePlayer = livePlayers.get(userId);
+        if (livePlayer != null) {
+            livePlayer.setCharacterHp(baseStats.getCharacterHp() + totalHpBonus);
+            livePlayer.setCharacterAp(baseStats.getCharacterAp() + totalApBonus);
+            livePlayer.setCharacterDp(baseStats.getCharacterDp() + totalDpBonus);
+
+            // TODO: 현재 HP가 최대 HP를 넘지 않도록 처리
+
+            System.out.println("능력치 적용 완료 : " + livePlayer);
+
+            // TODO: 변경된 능력치 정보를 해당 클라이언트에게 WebSocket 으로 전송
+            // 해당 사용자의 WebSocket 세션을 조회
+            WebSocketSession session = sessions.values().stream()
+                    .filter(s -> userId.equals(s.getAttributes().get("userId")))
+                    .findFirst()
+                    .orElse(null);
+
+            if (session != null && session.isOpen()) {
+                try {
+                    // 클라이언트에게 보낼 메시지 생성
+                    Map<String, Object> statUpdateMsg = new ConcurrentHashMap<>();
+                    statUpdateMsg.put("type", "PLAYER_STAT_UPDATE");
+                    statUpdateMsg.put("hp", livePlayer.getCharacterHp());
+                    statUpdateMsg.put("ap", livePlayer.getCharacterAp());
+                    statUpdateMsg.put("dp", livePlayer.getCharacterDp());
+                    statUpdateMsg.put("currentHp", livePlayer.getCurrentHp());
+
+                    // JSON 으로 변환하여 메시지 전송
+                    String messageJson = objectMapper.writeValueAsString(statUpdateMsg);
+                    session.sendMessage(new TextMessage(messageJson));
+                    System.out.println(userId + " 에게 능력치 업데이트 정보 전송 완료.");
+                } catch (Exception e) {
+                    System.err.println(userId + "에게 능력치 정보 전송 실패 : " + e.getMessage());
+                }
+            }
+        }
     }
 
     @PostConstruct  // GameService 빈(Bean)이 생성된 후 자동으로 실행

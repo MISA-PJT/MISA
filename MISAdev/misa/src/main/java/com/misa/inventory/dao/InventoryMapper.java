@@ -1,4 +1,4 @@
-package com.misa.inventory.repository;
+package com.misa.inventory.dao;
 
 import com.misa.inventory.dto.InventoryDTO;
 import com.misa.inventory.dto.InventoryItemDetailDTO;

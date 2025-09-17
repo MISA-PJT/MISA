@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.misa.monster.repository.MonsterMapper">
+<mapper namespace="com.misa.monster.dao.MonsterMapper">
 
     <resultMap id="monsterDropResultMap" type="com.misa.monster.dto.MonsterDropDTO">
         <result property="itemCode" column="item_code"/>

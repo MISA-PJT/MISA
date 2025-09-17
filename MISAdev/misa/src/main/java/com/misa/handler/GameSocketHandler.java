@@ -48,6 +48,15 @@ public class GameSocketHandler extends TextWebSocketHandler {
             String messageType = (String) messageMap.get("type");
 
             switch (messageType) {
+
+                case "ENTER":
+                    String userId = (String) messageMap.get("userId");
+                    // 세션의 속성(attributes)에 userId를 저장
+                    session.getAttributes().put("userId", userId);
+                    // GameService에 사용자 추가
+                    gameService.addPlayer(session.getId(), userId);
+                    break;
+
                 case "PLAYER_ATTACK":
                     Object spawnIdObj = messageMap.get("targetMonsterSpawnId");
                     int targetSpawnId;
@@ -77,6 +86,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
                         });
                     }
                     break;
+
                 default:
                     System.out.println("Unknown message type : " + messageType);
             }

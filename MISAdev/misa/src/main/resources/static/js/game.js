@@ -48,7 +48,19 @@ function startGame() {
             // WebSocket 연결 성공 이벤트
             socket.onopen = function (event) {
                 console.log("서버와 WebSocket 연결 성공!");
+
+                // WebSocket 연결 성공 시 서버에 사용자 ID를 전송
+                if (player && player.id) {
+                    const enterMessage = {
+                        type: "ENTER",
+                        userId: player.id
+                    };
+                    socket.send(JSON.stringify(enterMessage));
+                }
+
             };
+
+
 
             // 서버로부터 메시지를 수신했을 때 이벤트
             socket.onmessage = function (event) {
@@ -83,6 +95,14 @@ function startGame() {
                         monster.lng = monster.initialLng;
                         console.log(`${monster.name}이(가) 서버에서 리스폰 되었습니다.`);
                     }
+                } else if (message.type === "PLAYER_STAT_UPDATE") {
+                    // 사용자 캐릭터 능력치 동기화
+                    console.log("사용자 캐릭터 스탯 업데이트 수신 : ", message);
+                    player.hp = message.hp;
+                    player.ap = message.ap;
+                    player.dp = message.dp;
+                    player.currentHp = message.currentHp;
+
                 } else if (message.type === "ERROR") {
                     console.error("서버 에러 : ", message.message);
 
@@ -813,6 +833,13 @@ function startGame() {
             ctx.fillStyle = 'black';
             ctx.font = '12px Arial';
             ctx.fillText(`HP: ${player.currentHp}/${player.hp}`, canvas.width / 2 - 25, 18);
+
+            // AP, DP 표시 UI 추가 -250917
+            // TODO: 추후 캐릭터 능력치 UI에 표시
+            ctx.font = '14px Arial';
+            ctx.fillStyle = 'white';
+            ctx.fillText(`AP: ${player.ap}`, 20, 55);
+            ctx.fillText(`DP: ${player.dp}`, 90, 55);
         }
 
         // 7. 메인 게임 루프와 애니메이션 처리 함수 (기존 유지)

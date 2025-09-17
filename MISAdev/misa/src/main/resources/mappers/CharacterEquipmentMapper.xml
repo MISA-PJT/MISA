@@ -3,7 +3,17 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.misa.equipment.repository.CharacterEquipmentMapper">
+<mapper namespace="com.misa.equipment.dao.CharacterEquipmentMapper">
+
+    <resultMap id="itemResultMap" type="com.misa.item.dto.ItemDTO">
+        <id property="itemCode" column="item_code"/>
+        <result property="itemName" column="item_name"/>
+        <result property="itemType" column="item_type"/>
+        <result property="itemHp" column="item_hp"/>
+        <result property="itemAp" column="item_ap"/>
+        <result property="itemDp" column="item_dp"/>
+        <result property="slotCode" column="slot_code"/>
+    </resultMap>
 
     <insert id="equipItem">
         insert into tbl_character_equipment
@@ -33,5 +43,19 @@
           left join tbl_item b on a.item_code = b.item_code
          where a.user_id = #{userId}
            and a.slot_code = #{slotCode}
+    </select>
+
+    <select id="findAllEquippedItemsByUserId" resultMap="itemResultMap">
+        select
+            b.item_code,
+            b.item_name,
+            b.item_type,
+            b.item_hp,
+            b.item_ap,
+            b.item_dp,
+            b.slot_code
+        from tbl_character_equipment a
+        join tbl_item b on a.item_code = b.item_code
+        where a.user_id = #{userId}
     </select>
 </mapper>
