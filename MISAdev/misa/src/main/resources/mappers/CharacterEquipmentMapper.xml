@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.misa.equipment.repository.CharacterEquipmentMapper">
+
+    <insert id="equipItem">
+        insert into tbl_character_equipment
+        (user_id, slot_code, item_code)
+        VALUES
+        (#{userId}, #{slotCode}, #{itemCode})
+        on duplicate key update
+        item_code = values(item_code)
+    </insert>
+
+    <delete id="unequipItem">
+        delete from tbl_character_equipment
+         where user_id = #{userId}
+           and slot_code = #{slotCode}
+    </delete>
+
+    <select id="findEquippedItemBySlot" resultType="com.misa.item.dto.ItemDTO">
+        select
+            b.item_code as 'itemCode',
+            b.item_name as 'itemName',
+            b.item_type,
+            b.item_hp,
+            b.item_ap,
+            b.item_dp,
+            b.slot_code
+          from tbl_character_equipment a
+          left join tbl_item b on a.item_code = b.item_code
+         where a.user_id = #{userId}
+           and a.slot_code = #{slotCode}
+    </select>
+</mapper>

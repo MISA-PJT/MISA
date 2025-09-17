@@ -230,6 +230,10 @@ function startGame() {
                         }
                     });
                 }
+                // i 키를 눌렀을 때 인벤토리 UI 호출
+                if (e.key === 'i') {
+                    toggleInventory();
+                }
             });
             window.addEventListener('keyup', (e) => {
                 const key = e.key.toLowerCase();
@@ -289,6 +293,88 @@ function startGame() {
                 console.log("사용자 데이터 로딩 완료", player);
             } catch (error) {
                 console.error("사용자 로딩 실패 : ", error);
+            }
+        }
+
+        // 인벤토리 UI를 열고 닫는 함수 -250916
+        async function toggleInventory() {
+            const inventoryUI = document.getElementById('inventory-ui');
+            const inventoryList = document.getElementById('inventory-list');
+
+            // UI의 hidden 클래스를 토글
+            inventoryUI.classList.toggle('hidden');
+
+            // 인벤토리가 열렸을 때만 데이터 로드
+            if (!inventoryUI.classList.contains('hidden')) {
+                try {
+                    const response = await fetch(`/api/inventory/${player.id}`);
+                    const items = await response.json();
+
+                    // 목록 초기화
+                    inventoryList.innerHTML = '';
+
+                    if (items.length === 0) {
+                        inventoryList.innerHTML = '<li>비어 있음</li>';
+                    } else {
+                        // 각 아이템을 목록에 추가
+                        items.forEach(item => {
+                            const li = document.createElement('li');
+
+                            // 아이템 정보 텍스트 생성
+                            const itemText = document.createElement('span');
+                            itemText.textContent = `${item.itemName} x ${item.quantity} (${item.itemType})`;
+                            li.appendChild(itemText);
+
+                            // 아이템 타입에 따라 버튼 생성
+                            if (item.itemType === 'equipment') {
+                                const equipButton = document.createElement('button');
+                                equipButton.textContent = '장착';
+
+                                // 장착 버튼 클릭 시 로직
+                                equipButton.onclick = async () => {
+                                    try {
+                                        const response = await fetch('/api/equipment/equip', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type' : 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                                userId: player.id,
+                                                itemCode: item.itemCode
+                                            }),
+                                        });
+
+                                        if (response.ok) {
+                                            console.log(`${item.itemName} 장착 성공!`);
+                                            inventoryUI.classList.add('hidden');
+                                            toggleInventory();
+                                        } else {
+                                            // 서버에서 보낸 에러 메시지 처리
+                                            const errorText = await response.text();
+                                            console.error('장착 실패 : ', errorText);
+                                            alert('장착에 실패했습니다 : ' + errorText);
+                                        }
+                                    } catch (error) {
+                                        console.error('장착 요청 중 에러 발생 : ', error);
+                                    }
+                                };
+                                li.appendChild(equipButton);
+                            } else if (item.itemType === 'consumable') {
+                                const useButton = document.createElement('button');
+                                useButton.textContent = '사용';
+                                useButton.onclick = () => {
+                                    console.log(`${item.itemName} 사용!`);
+                                    // TODO: 사용 로직 구현
+                                };
+                                li.appendChild(useButton);
+                            }
+                            inventoryList.appendChild(li);
+                        });
+                    }
+                } catch (error) {
+                    console.error("인벤토리 로딩 실패 : ", error);
+                    inventoryList.innerHTML = '<li>정보를 불러올 수 없습니다.</li>';
+                }
             }
         }
 

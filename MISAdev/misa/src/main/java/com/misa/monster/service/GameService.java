@@ -1,6 +1,7 @@
 package com.misa.monster.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.misa.inventory.service.InventoryService;
 import com.misa.monster.dto.MonsterDTO;
 import com.misa.monster.dto.MonsterDropDTO;
 import jakarta.annotation.PostConstruct;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class GameService {
 
     private final MonsterService monsterService;
+    private final InventoryService inventoryService;    // InventoryService 주입
 
     // sessions 맵 (GameSocketHandler와 공유 - 브로드캐스트용)
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
@@ -37,8 +39,9 @@ public class GameService {
     private final Map<Integer, java.util.concurrent.ScheduledFuture<?>> respawnFutures = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
 
-    public GameService(MonsterService monsterService, ObjectMapper objectMapper) {
+    public GameService(MonsterService monsterService, InventoryService inventoryService, ObjectMapper objectMapper) {
         this.monsterService = monsterService;
+        this.inventoryService= inventoryService;
         this.objectMapper = objectMapper;
     }
 
@@ -163,11 +166,14 @@ public class GameService {
                             // 드랍된 아이템이 있으면 결과 맵에 추가
                             if (!droppedItems.isEmpty()) {
                                 result.put("droppedItems", droppedItems);
+
+                                // 드랍된 각 아이템을 플레이어의 인벤토리에 추가
+                                droppedItems.forEach(item -> {
+                                    String playerId = "misa01";
+                                    inventoryService.addItemToInventory(playerId, item.getItemCode(), 1);
+                                });
                             }
                         }
-                        // 리스폰 스케줄링 (원본 데이터로 복구)
-//                        MonsterDTO original = monsterService.findBySpawnId(targetSpawnId);
-//                        scheduleRespawn(targetSpawnId, original);
                     }
                 } else {
                     System.out.println("Target monster already dead : " + targetSpawnId);
