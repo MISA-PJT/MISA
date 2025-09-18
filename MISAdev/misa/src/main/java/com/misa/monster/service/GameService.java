@@ -72,9 +72,10 @@ public class GameService {
 
     // 사용자 접속 메소드
     public void addPlayer(String sessionId, String userId) {
-        CharacterDTO character = characterMapper.findCharacterById(userId);
-        if (character != null) {
-            livePlayers.put(userId, character);
+        CharacterDTO baseCharacter = characterMapper.findCharacterById(userId);
+        if (baseCharacter != null) {
+            CharacterDTO liveCharacter = new CharacterDTO(baseCharacter);
+            livePlayers.put(userId, liveCharacter);
             recalculatePlayerStats(userId); // 접속 시 능력치 한번 재계산
         }
     }
@@ -82,6 +83,11 @@ public class GameService {
     // 사용자 접속 종료 메소드
     public void removePlayer(String userId) {
         livePlayers.remove(userId);
+    }
+
+    // 실시간 사용자 정보 확인
+    public CharacterDTO getLivePlayer(String userId) {
+        return livePlayers.get(userId);
     }
 
     // 사용자의 능력치를 재계산하고 모든 클라이언트에게 업데이트된 정보 전송
@@ -101,11 +107,19 @@ public class GameService {
         // 실시간 사용자 캐릭터에 최종 능력치(기본 + 장비)를 업데이트
         CharacterDTO livePlayer = livePlayers.get(userId);
         if (livePlayer != null) {
-            livePlayer.setCharacterHp(baseStats.getCharacterHp() + totalHpBonus);
+
+            // 현재 HP를 보존하고, 최대 HP를 초과하지 않도록 처리
+            int oldMaxHp = livePlayer.getCharacterHp(); // 변경전 최대 HP
+            int newMaxHp = baseStats.getCharacterHp() + totalHpBonus;
+
+            livePlayer.setCharacterHp(newMaxHp);
             livePlayer.setCharacterAp(baseStats.getCharacterAp() + totalApBonus);
             livePlayer.setCharacterDp(baseStats.getCharacterDp() + totalDpBonus);
 
-            // TODO: 현재 HP가 최대 HP를 넘지 않도록 처리
+            // 최대 HP가 변경되었다면, 현재 HP도 비율에 맞게 조정 후 최대치를 넘지 않도록 제한
+            if (livePlayer.getCharacterHp() > newMaxHp) {
+                livePlayer.setCurrentHp(newMaxHp);
+            }
 
             System.out.println("능력치 적용 완료 : " + livePlayer);
 
@@ -136,6 +150,7 @@ public class GameService {
             }
         }
     }
+
 
     @PostConstruct  // GameService 빈(Bean)이 생성된 후 자동으로 실행
     public void init() {
@@ -212,7 +227,13 @@ public class GameService {
 
     // 사용자의 공격을 처리하는 메소드
     public Map<String, Object> processAttack(String attackerId, int targetSpawnId) {
-        int playerAp = 5;
+
+        CharacterDTO attacker = livePlayers.get(attackerId);
+        if (attacker == null) {
+            System.err.println("공격자를 livePlayers 에서 찾을 수 없음 : " + attackerId);
+            return new ConcurrentHashMap<>();
+        }
+        int playerAp = attacker.getCharacterAp();
 
         Map<String, Object> result = new ConcurrentHashMap<>();
         MonsterDTO targetMonster = liveMonsters.get(targetSpawnId);
@@ -275,4 +296,27 @@ public class GameService {
         return sessions;
     }
 
+    // 몬스터의 사용자 캐릭터 공격 로직
+    public void processMonsterAttack(String userId, int monsterSpawnId) {
+        CharacterDTO livePlayer = getLivePlayer(userId);
+        MonsterDTO attackingMonster = liveMonsters.get(monsterSpawnId); // 사용자를 공격하는 몬스터 조회
+
+        if (livePlayer == null || attackingMonster == null ||livePlayer.getCharacterHp() <= 0) {
+            return; // 사용자나 몬스터가 없거나 사용자 사망 시 무시
+        }
+
+        int monsterAp = attackingMonster.getAp();
+
+        synchronized (livePlayer) {
+            int damage = Math.max(1, monsterAp - livePlayer.getCharacterDp());
+            livePlayer.setCurrentHp(livePlayer.getCurrentHp() - damage);
+
+            if (livePlayer.getCurrentHp() <= 0) {
+                livePlayer.setCurrentHp(0);
+                System.out.println("사용자 " + userId + " 처치됨.");
+            }
+        }
+
+        recalculatePlayerStats(userId);
+    }
 }

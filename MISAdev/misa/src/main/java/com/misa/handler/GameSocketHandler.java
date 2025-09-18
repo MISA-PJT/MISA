@@ -47,10 +47,13 @@ public class GameSocketHandler extends TextWebSocketHandler {
             Map<String, Object> messageMap = objectMapper.readValue(payload, Map.class);
             String messageType = (String) messageMap.get("type");
 
+            String userId;
+            Object spawnIdObj;
+
             switch (messageType) {
 
                 case "ENTER":
-                    String userId = (String) messageMap.get("userId");
+                    userId = (String) messageMap.get("userId");
                     // 세션의 속성(attributes)에 userId를 저장
                     session.getAttributes().put("userId", userId);
                     // GameService에 사용자 추가
@@ -58,7 +61,14 @@ public class GameSocketHandler extends TextWebSocketHandler {
                     break;
 
                 case "PLAYER_ATTACK":
-                    Object spawnIdObj = messageMap.get("targetMonsterSpawnId");
+
+                    userId = (String) session.getAttributes().get("userId");
+                    if (userId == null) {
+                        System.err.println("인증되지 않은 세션의 공격 요청 입니다.");
+                        return;
+                    }
+
+                    spawnIdObj = messageMap.get("targetMonsterSpawnId");
                     int targetSpawnId;
                     if (spawnIdObj instanceof String) {
                         targetSpawnId = Integer.parseInt((String) spawnIdObj);
@@ -69,7 +79,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
                     }
 
                     // GameService에 로직 처리를 위임하고 결과를 받음.
-                    Map<String, Object> attackResult = gameService.processAttack(session.getId(), targetSpawnId);
+                    Map<String, Object> attackResult = gameService.processAttack(userId, targetSpawnId);
 
                     // 모든 사용자에게 공격 결과 브로드캐스팅
                     if (!attackResult.isEmpty()) {
@@ -84,6 +94,16 @@ public class GameSocketHandler extends TextWebSocketHandler {
                                 System.err.println("Broadcast failed for session " + s.getId() + " : " + e.getMessage());
                             }
                         });
+                    }
+                    break;
+
+                case "MONSTER_ATTACK":
+                    userId = (String) session.getAttributes().get("userId");
+                    spawnIdObj = messageMap.get("monsterSpawnId");
+
+                    if (userId != null && spawnIdObj != null) {
+                        int monsterSpawnId = (Integer) spawnIdObj;
+                        gameService.processMonsterAttack(userId, monsterSpawnId);
                     }
                     break;
 

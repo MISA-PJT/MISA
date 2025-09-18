@@ -2,15 +2,27 @@ package com.misa.character.service;
 
 import com.misa.character.dto.CharacterDTO;
 import com.misa.character.dao.CharacterMapper;
+import com.misa.character.dto.CharacterStatusDTO;
+import com.misa.equipment.dao.CharacterEquipmentMapper;
+import com.misa.item.dto.ItemDTO;
+import com.misa.monster.service.GameService;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class CharacterService {
 
     private final CharacterMapper characterMapper;
+    private final GameService gameService;
+    private final CharacterEquipmentMapper equipmentMapper;
 
-    public CharacterService(CharacterMapper characterMapper) {
+    public CharacterService(CharacterMapper characterMapper,
+                            GameService gameService,
+                            CharacterEquipmentMapper equipmentMapper) {
         this.characterMapper = characterMapper;
+        this.gameService = gameService;
+        this.equipmentMapper = equipmentMapper;
     }
 
     // ID로 캐릭터 정보를 조회하고, 실시간 데이터 초기화
@@ -27,5 +39,25 @@ public class CharacterService {
         }
 
         return character;
+    }
+
+    // 캐릭터 정보 종합 조회 메소드
+    public CharacterStatusDTO getCharacterStatus(String userId) {
+        CharacterDTO livePlayer = gameService.getLivePlayer(userId);
+        if (livePlayer == null) {
+            return null;
+        }
+
+        List<ItemDTO> equippedItems = equipmentMapper.findAllEquippedItemsByUserId(userId);
+
+        CharacterStatusDTO statusDTO = new CharacterStatusDTO();
+        statusDTO.setUserId(livePlayer.getUserId());
+        statusDTO.setCharacterHp(livePlayer.getCharacterHp());
+        statusDTO.setCurrentHp(livePlayer.getCurrentHp());
+        statusDTO.setCharacterAp(livePlayer.getCharacterAp());
+        statusDTO.setCharacterDp(livePlayer.getCharacterDp());
+        statusDTO.setEquippedItems(equippedItems);
+
+        return statusDTO;
     }
 }
