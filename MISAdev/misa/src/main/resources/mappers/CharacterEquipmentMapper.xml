@@ -13,6 +13,7 @@
         <result property="itemAp" column="item_ap"/>
         <result property="itemDp" column="item_dp"/>
         <result property="slotCode" column="slot_code"/>
+        <result property="slotName" column="slot_name"/>
     </resultMap>
 
     <insert id="equipItem">
@@ -30,17 +31,19 @@
            and slot_code = #{slotCode}
     </delete>
 
-    <select id="findEquippedItemBySlot" resultType="com.misa.item.dto.ItemDTO">
+    <select id="findEquippedItemBySlot" resultMap="itemResultMap">
         select
-            b.item_code as 'itemCode',
-            b.item_name as 'itemName',
+            b.item_code,
+            b.item_name,
             b.item_type,
             b.item_hp,
             b.item_ap,
             b.item_dp,
-            b.slot_code
+            b.slot_code,
+            c.slot_name
           from tbl_character_equipment a
-          left join tbl_item b on a.item_code = b.item_code
+          join tbl_item b on a.item_code = b.item_code
+     left join tbl_equipment_slot c on b.slot_code = c.slot_code
          where a.user_id = #{userId}
            and a.slot_code = #{slotCode}
     </select>
@@ -53,9 +56,11 @@
             b.item_hp,
             b.item_ap,
             b.item_dp,
-            b.slot_code
+            b.slot_code,
+            c.slot_name
         from tbl_character_equipment a
         join tbl_item b on a.item_code = b.item_code
+   left join tbl_equipment_slot c on b.slot_code = c.slot_code
         where a.user_id = #{userId}
     </select>
 </mapper>

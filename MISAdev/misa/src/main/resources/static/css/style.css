@@ -23,18 +23,19 @@ body {
 /* 인벤토리 스타일 */
 #inventory-ui {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 250px;
+    top: 20px;
+    left: 340px;
+    /*transform: translate(-50%, -50%);*/
+    width: 400px;
     min-height: 300px;
-    background-color: rgba(0, 0, 0, 0.75);
+    background-color: rgba(0, 0, 0, 0.50);
     border: 2px solid #aaa;
     border-radius: 8px;
     color: white;
     padding: 15px;
     z-index: 10;   /* 캔버스 위에 위치 */
     font-family: sans-serif;
+    text-align: center;
 }
 
 #inventory-ui.hidden {
@@ -47,6 +48,77 @@ body {
 }
 
 #inventory-list li {
-    padding: 5px 0;
+    padding: 8px 5px;
     border-bottom: 1px solid #444;
+    display: flex;  /* 버튼 정렬 */
+    align-items: center;
+    justify-content: flex-end;
+}
+
+#inventory-list li > span {
+    flex-grow: 1;
+    text-align: center;
+}
+
+/* 캐릭터 정보 스타일 */
+#character-status-ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    /*transform: translate(-50%, -50%);*/
+    width: 280px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    color: white;
+    padding: 15px;
+    z-index: 10;
+    font-family: sans-serif;
+    text-align: center;
+}
+
+#character-status-ui.hidden {
+    display: none;
+}
+
+#character-stats p {
+    margin: 8px 0;
+    text-align: center;
+}
+
+#character-equipment p {
+    margin: 8px 0;
+    display: flex;  /* 버튼 정렬 */
+    align-items: center;
+    justify-content: flex-end;
+}
+
+#character-equipment p > span {
+    flex-grow: 1;
+    text-align: center;
+}
+
+/* 아이템 정보 스타일 */
+#item-info-ui {
+    position: absolute;
+    top: 20px;
+    left: 780px;
+    width: 200px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    color: white;
+    padding: 15px;
+    z-index: 10;
+    font-family: sans-serif;
+    text-align: center;
+}
+
+#item-info-ui.hidden {
+    display: none;
+}
+
+#item-info-stats p {
+    margin: 5px 0;
+    color: #aaddff;
 }

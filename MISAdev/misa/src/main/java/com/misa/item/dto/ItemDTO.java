@@ -9,10 +9,11 @@ public class ItemDTO {
     private int itemAp;
     private int itemDp;
     private String slotCode;
+    private String slotName;
 
     public ItemDTO() {}
 
-    public ItemDTO(String itemCode, String itemName, String itemType, int itemHp, int itemAp, int itemDp, String slotCode) {
+    public ItemDTO(String itemCode, String itemName, String itemType, int itemHp, int itemAp, int itemDp, String slotCode, String slotName) {
         this.itemCode = itemCode;
         this.itemName = itemName;
         this.itemType = itemType;
@@ -20,6 +21,7 @@ public class ItemDTO {
         this.itemAp = itemAp;
         this.itemDp = itemDp;
         this.slotCode = slotCode;
+        this.slotName = slotName;
     }
 
     public String getItemCode() {
@@ -78,6 +80,14 @@ public class ItemDTO {
         this.slotCode = slotCode;
     }
 
+    public String getSlotName() {
+        return slotName;
+    }
+
+    public void setSlotName(String slotName) {
+        this.slotName = slotName;
+    }
+
     @Override
     public String toString() {
         return "ItemDTO{" +
@@ -88,6 +98,7 @@ public class ItemDTO {
                 ", itemAp=" + itemAp +
                 ", itemDp=" + itemDp +
                 ", slotCode='" + slotCode + '\'' +
+                ", slotName='" + slotName + '\'' +
                 '}';
     }
 }

@@ -10,6 +10,10 @@
         <result property="itemName" column="item_name"/>
         <result property="itemType" column="item_type"/>
         <result property="quantity" column="item_quantity"/>
+        <result property="itemHp" column="item_hp"/>
+        <result property="itemAp" column="item_ap"/>
+        <result property="itemDp" column="item_dp"/>
+        <result property="slotName" column="slot_name"/>
     </resultMap>
 
     <select id="findInventoryByUserId" resultMap="inventoryDetailResultMap" parameterType="string">
@@ -18,8 +22,13 @@
               , b.item_name
               , b.item_type
               , a.item_quantity
+              , b.item_hp
+              , b.item_ap
+              , b.item_dp
+              , c.slot_name
           from tbl_inventory a
           join tbl_item b on a.item_code = b.item_code
+     left join tbl_equipment_slot c on b.slot_code = c.slot_code
          where a.user_id = #{userId}
     </select>
 

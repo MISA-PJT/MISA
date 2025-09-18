@@ -25,6 +25,17 @@ public class CharacterDTO {
         this.currentHp = currentHp;
     }
 
+    // 복사 생성자
+    public CharacterDTO(CharacterDTO original) {
+        this.userId = original.userId;
+        this.characterHp = original.characterHp;
+        this.characterAp = original.characterAp;
+        this.characterDp = original.characterDp;
+        this.currentHp = original.characterHp;
+        this.latitude = 0;
+        this.longitude = 0;
+    }
+
     public String getUserId() {
         return userId;
     }

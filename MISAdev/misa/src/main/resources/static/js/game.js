@@ -254,6 +254,11 @@ function startGame() {
                 if (e.key === 'i') {
                     toggleInventory();
                 }
+
+                // u 키를 눌렀을 때 캐릭터 정보창 UI 호출
+                if (e.key === 'u') {
+                    toggleCharacterStatus();
+                }
             });
             window.addEventListener('keyup', (e) => {
                 const key = e.key.toLowerCase();
@@ -342,7 +347,21 @@ function startGame() {
 
                             // 아이템 정보 텍스트 생성
                             const itemText = document.createElement('span');
-                            itemText.textContent = `${item.itemName} x ${item.quantity} (${item.itemType})`;
+
+                            // 아이템 타입에 따라 표시할 텍스트 결정
+                            let itemTypeText = '';
+                            switch (item.itemType) {
+                                case 'equipment':
+                                    itemTypeText = '장비';
+                                    break;
+                                case 'consumable':
+                                    itemTypeText = '소모품';
+                                    break;
+                                default:
+                                    itemTypeText = item.itemType;
+                            }
+
+                            itemText.textContent = `${item.itemName} x ${item.quantity} (${itemTypeText})`;
                             li.appendChild(itemText);
 
                             // 아이템 타입에 따라 버튼 생성
@@ -366,8 +385,18 @@ function startGame() {
 
                                         if (response.ok) {
                                             console.log(`${item.itemName} 장착 성공!`);
+
+                                            const inventoryUI = document.getElementById('inventory-ui');
                                             inventoryUI.classList.add('hidden');
-                                            toggleInventory();
+                                            await toggleInventory();
+
+                                            // 캐릭터 정보창이 열려 있는지 확인
+                                            const statusUI = document.getElementById('character-status-ui');
+                                            if (!statusUI.classList.contains('hidden')) {
+                                                // 열려 있다면 내용만 새로고침
+                                                await refreshCharacterStatus();
+                                            }
+
                                         } else {
                                             // 서버에서 보낸 에러 메시지 처리
                                             const errorText = await response.text();
@@ -382,12 +411,38 @@ function startGame() {
                             } else if (item.itemType === 'consumable') {
                                 const useButton = document.createElement('button');
                                 useButton.textContent = '사용';
-                                useButton.onclick = () => {
-                                    console.log(`${item.itemName} 사용!`);
-                                    // TODO: 사용 로직 구현
+                                useButton.onclick = async () => {
+                                    try {
+                                        const response = await fetch('/api/inventory/use', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                userId: player.id,
+                                                itemCode: item.itemCode
+                                            })
+                                        });
+                                        if (response.ok) {
+                                            console.log(`${item.itemName} 사용 요청 성공`);
+                                            // 성공 시 인벤토리 창을 닫음 (UI는 WebSocket 응답으로 갱신)
+                                            inventoryUI.classList.add('hidden');
+                                        } else {
+                                            alert('아이템 사용에 실패했습니다.');
+                                        }
+                                    } catch (error) {
+                                        console.error('아이템 사용 요청 중 에러 발생 : ', error);
+                                    }
                                 };
                                 li.appendChild(useButton);
                             }
+
+                            // 아이템 정보 버튼 생성
+                            const infoButton = document.createElement('button');
+                            infoButton.textContent = '정보';
+                            infoButton.onclick = () => {
+                                showItemInfo(item); // 아이템 정보 표시 함수 호출
+                            };
+                            li.appendChild(infoButton);
+
                             inventoryList.appendChild(li);
                         });
                     }
@@ -395,6 +450,121 @@ function startGame() {
                     console.error("인벤토리 로딩 실패 : ", error);
                     inventoryList.innerHTML = '<li>정보를 불러올 수 없습니다.</li>';
                 }
+            }
+        }
+
+        // 아이템 상세 정보 창을 표시하는 함수
+        function showItemInfo(item) {
+            const infoUI = document.getElementById('item-info-ui');
+            const nameEl = document.getElementById('item-info-name');
+            const typeEl = document.getElementById('item-info-type');
+            const statsEl = document.getElementById('item-info-stats');
+            const closeBtn = document.getElementById('item-info-close-btn');
+
+            // 정보 채우기
+            nameEl.textContent = item.itemName;
+
+            // 아이템 타입에 따라 유형 텍스트 결정
+            let typeText = '';
+            switch (item.itemType) {
+                case 'equipment':
+                    typeText = `부위 : ${item.slotName}`;
+                    break;
+                case 'consumable':
+                    typeText = '유형 : 소모품';
+                    break;
+                default:
+                    typeText = `유형 : ${item.itemType}`;
+            }
+            typeEl.textContent = typeText;
+            statsEl.innerHTML = '';
+
+            // 아이템의 능력치가 0이 아닐 경우에만 표시
+            if (item.itemHp > 0) statsEl.innerHTML += `<p>HP + ${item.itemHp}</p>`;
+            if (item.itemAp > 0) statsEl.innerHTML += `<p>AP + ${item.itemAp}</p>`;
+            if (item.itemDp > 0) statsEl.innerHTML += `<p>DP + ${item.itemDp}</p>`;
+
+            // 닫기 버튼 이벤트
+            closeBtn.onclick = () => {
+                infoUI.classList.add('hidden');
+            };
+
+            // 정보창 표시
+            infoUI.classList.remove('hidden');
+        }
+
+        // 캐릭터 정보창 UI를 열고 닫는 함수
+        async function toggleCharacterStatus(){
+            const statusUI = document.getElementById('character-status-ui');
+            statusUI.classList.toggle('hidden');
+
+            if (!statusUI.classList.contains('hidden')) {
+                // 캐릭터 정보창 내용 새로고침 함수 호출하여 UI 갱신
+                await refreshCharacterStatus();
+            }
+        }
+
+        // 캐릭터 정보창 내용 새로고침 함수
+        async function refreshCharacterStatus() {
+            try {
+                const response = await fetch(`/api/characters/${player.id}/status`);
+                const statusData = await response.json();
+
+                // 능력치 정보 표시
+                const statsDiv = document.getElementById('character-stats');
+                statsDiv.innerHTML = `
+                    <p>HP: ${statusData.currentHp} / ${statusData.characterHp}</p>
+                    <p>AP: ${statusData.characterAp}</p>
+                    <p>DP: ${statusData.characterDp}</p>
+                    `;
+
+                // 장비 정보 표시
+                const equipmentDiv = document.getElementById('character-equipment');
+                equipmentDiv.innerHTML = '';
+                if (statusData.equippedItems && statusData.equippedItems.length >= 0) {
+                    statusData.equippedItems.forEach(item => {
+                        const equipP = document.createElement('p');
+
+                        const itemText = document.createElement('span');
+                        // equipP.textContent = `${item.slotCode}: ${item.itemName}`;
+                        itemText.textContent = `${item.slotName}: ${item.itemName}`;
+                        equipP.appendChild(itemText);
+
+                        // 장착 해제 버튼 생성
+                        const unequipButton = document.createElement('button');
+                        unequipButton.textContent = '해제';
+                        unequipButton.onclick = async () => {
+                            try {
+                                const unequipResponse = await fetch('/api/equipment/unequip', {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({
+                                        userId: player.id,
+                                        slotCode: item.slotCode
+                                    })
+                                });
+
+                                if (unequipResponse.ok) {
+                                    console.log(`${item.itemName} 장착 해제 성공!`);
+                                    // 성공 시 캐릭터 정보창을 닫았다가 다시 열어 갱신
+                                    statusUI.classList.add('hidden');
+                                    toggleCharacterStatus();
+                                } else {
+                                    alert('장착 해제에 실패했습니다.');
+                                }
+                            } catch (error) {
+                                console.error('장착 해제 요청 중 에러 발생 : ', error);
+                            }
+                        };
+                        equipP.appendChild(unequipButton);
+
+                        equipmentDiv.appendChild(equipP);
+                    });
+                } else {
+                    equipmentDiv.innerHTML = '<p>장착한 아이템이 없습니다.</p>';
+                }
+            } catch (error) {
+                console.error("캐릭터 정보 갱신 실패 : ", error);
             }
         }
 
@@ -507,12 +677,23 @@ function startGame() {
                         // 공격 범위 내에 있으면 데미지 주기 (쿨타임 적용)
                         if (distanceToPlayer < monster.attackRange) {
                             if (now - monster.lastAttackTime > monster.attackCooldown) {
-                                // 사용자에게 데미지
+                                // 사용자를 공격 했다는 메시지를 서버에 전송
+                                if (socket && socket.readyState === WebSocket.OPEN) {
+                                    const monsterAttackMessage = {
+                                        type: "MONSTER_ATTACK",
+                                        monsterId: monster.id,
+                                        monsterSpawnId: monster.spawnId
+                                    };
+                                    socket.send(JSON.stringify(monsterAttackMessage));
+                                }
+                                monster.lastAttackTime = now;   // 공격 간격은 클라이언트에서도 돌려야 중복 요소 방지
+
+                                // 사용자에게 데미지 -250918 서버 처리로 인해 비활성화
                                 // 데미지 계산 (최소 1 적용) : 몬스터 공격력 - 사용자 방어력
-                                const damage = Math.max(1, monster.ap - player.dp);
-                                player.currentHp -= damage;
-                                monster.lastAttackTime = now;
-                                console.log(`${monster.name} attacks for ${damage} damage! Player HP: ${player.currentHp}`);
+                                // const damage = Math.max(1, monster.ap - player.dp);
+                                // player.currentHp -= damage;
+                                // monster.lastAttackTime = now;
+                                // console.log(`${monster.name} attacks for ${damage} damage! Player HP: ${player.currentHp}`);
 
                                 // 사용자 사망 체크
                                 if (player.currentHp <= 0) {
