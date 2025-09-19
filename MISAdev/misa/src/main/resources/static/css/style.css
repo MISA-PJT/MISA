@@ -122,3 +122,19 @@ body {
     margin: 5px 0;
     color: #aaddff;
 }
+
+/* 사용자 사망 시 생성되는 비석 스타일 */
+#tombstone-image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+#tombstone-image.hidden {
+    display: none;
+}

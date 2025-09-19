@@ -76,7 +76,7 @@ public class CharacterEquipmentService {
         System.out.println("인벤토리 제거 완료.");
 
         // GameService에 능력치 재계산 요청
-        gameService.recalculatePlayerStats(userId);
+        gameService.recalculatePlayerStats(userId, false);
 
         /* TODO:
         *   1. 아이템 정보 조회 (장착 부위, 능력치 등)
@@ -110,7 +110,7 @@ public class CharacterEquipmentService {
         System.out.println(userId + " 님이 " + slotCode + " 부위의 " + itemToUnequip.getItemCode() + " 아이템을 해제했습니다.");
 
         // GameService에 능력치 재계산 요청
-        gameService.recalculatePlayerStats(userId);
+        gameService.recalculatePlayerStats(userId, false);
 
         // TODO: GameService와 연동하여 사용자의 실시간 능력치 업데이트
     }

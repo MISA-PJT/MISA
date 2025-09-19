@@ -105,7 +105,7 @@ public class InventoryService {
         removeItem(userId, itemCode, 1);
 
         // 변경된 능력치 정보 클라이언트에 전송
-        gameService.recalculatePlayerStats(userId);
+        gameService.recalculatePlayerStats(userId, false);
 
     }
 }
