@@ -71,12 +71,13 @@ public class GameService {
     }
 
     // 사용자 접속 메소드
+    // 접속 시 능력치 재계산 메소드에 true 전달 -250919 캐릭터 장비 장착 및 해제 시 HP 회복 제한
     public void addPlayer(String sessionId, String userId) {
         CharacterDTO baseCharacter = characterMapper.findCharacterById(userId);
         if (baseCharacter != null) {
             CharacterDTO liveCharacter = new CharacterDTO(baseCharacter);
             livePlayers.put(userId, liveCharacter);
-            recalculatePlayerStats(userId); // 접속 시 능력치 한번 재계산
+            recalculatePlayerStats(userId, true); // 접속 시 능력치 한번 재계산
         }
     }
 
@@ -91,7 +92,7 @@ public class GameService {
     }
 
     // 사용자의 능력치를 재계산하고 모든 클라이언트에게 업데이트된 정보 전송
-    public void recalculatePlayerStats(String userId) {
+    public void recalculatePlayerStats(String userId, boolean isInitialLoad) {
         // DB 에서 사용자 캐릭터의 기본 능력치 적용
         CharacterDTO baseStats = characterMapper.findCharacterById(userId);
         if (baseStats == null) return;;
@@ -109,17 +110,32 @@ public class GameService {
         if (livePlayer != null) {
 
             // 현재 HP를 보존하고, 최대 HP를 초과하지 않도록 처리
-            int oldMaxHp = livePlayer.getCharacterHp(); // 변경전 최대 HP
+            int oldMaxHp = livePlayer.getCharacterHp();
             int newMaxHp = baseStats.getCharacterHp() + totalHpBonus;
 
             livePlayer.setCharacterHp(newMaxHp);
             livePlayer.setCharacterAp(baseStats.getCharacterAp() + totalApBonus);
             livePlayer.setCharacterDp(baseStats.getCharacterDp() + totalDpBonus);
 
-            // 최대 HP가 변경되었다면, 현재 HP도 비율에 맞게 조정 후 최대치를 넘지 않도록 제한
-            if (livePlayer.getCharacterHp() > newMaxHp) {
+            // 최초 접속 시에만 현재 HP를 최대 HP로 설정
+            if (isInitialLoad) {
                 livePlayer.setCurrentHp(newMaxHp);
+            } else {
+                // 게임 중에는 현재 HP가 새로운 최대 HP를 넘지 않도록 보정
+                if (livePlayer.getCurrentHp() > newMaxHp) {
+                    livePlayer.setCurrentHp(newMaxHp);
+                }
             }
+
+            // 최대 HP가 상승했다면, 현재 HP도 그 차이만큼 더해줌.
+//            if (newMaxHp > oldMaxHp) {
+//                livePlayer.setCurrentHp(livePlayer.getCurrentHp() + (newMaxHp - oldMaxHp));
+//            }
+
+            // 최대 HP가 변경되었다면, 현재 HP도 비율에 맞게 조정 후 최대치를 넘지 않도록 제한
+//            if (livePlayer.getCurrentHp() > newMaxHp) {
+//                livePlayer.setCurrentHp(newMaxHp);
+//            }
 
             System.out.println("능력치 적용 완료 : " + livePlayer);
 
@@ -314,9 +330,56 @@ public class GameService {
             if (livePlayer.getCurrentHp() <= 0) {
                 livePlayer.setCurrentHp(0);
                 System.out.println("사용자 " + userId + " 처치됨.");
+
+                // 사용자 캐릭터 사망 로직 -250919
+                // 모든 클라이언트에게 사용자 사망 정보 브로드캐스팅
+                broadcastPlayerState(userId, "PLAYER_DIED");
+
+                // 5초 후에 부활 로직 실행 예약
+                respawnScheduler.schedule(() -> {
+                    // HP를 최대로 회복
+                    livePlayer.setCurrentHp(livePlayer.getCharacterHp());
+
+                    // 모든 클라이언트에게 사용자 부활 정보 브로드캐스팅
+                    broadcastPlayerState(userId, "PLAYER_RESPAWN");
+
+                    System.out.println("사용자 " + userId + " 부활");
+                }, 5, TimeUnit.SECONDS);
             }
         }
 
-        recalculatePlayerStats(userId);
+        recalculatePlayerStats(userId, false);
+    }
+
+    // 사용자 상태 브로드캐스팅 메소드
+    public void broadcastPlayerState(String userId, String type) {
+        CharacterDTO livePlayer = getLivePlayer(userId);
+        if (livePlayer == null) return;
+
+        Map<String, Object> message = new ConcurrentHashMap<>();
+        message.put("type", type);
+        message.put("userId", userId);
+        message.put("lat", 37.563188);
+        message.put("lng", 127.192642);
+
+        if ("PLAYER_RESPAWN".equals(type)) {
+            message.put("currentHp", livePlayer.getCurrentHp());
+            message.put("maxHp", livePlayer.getCharacterHp());
+        }
+
+        String messageJson;
+        try {
+            messageJson = objectMapper.writeValueAsString(message);
+        } catch (Exception e) {
+            return;
+        }
+
+        sessions.values().forEach(s -> {
+            try {
+                s.sendMessage(new TextMessage(messageJson));
+            } catch (Exception e) {
+                System.out.println("s.sendMessage 실패");
+            }
+        });
     }
 }
