@@ -63,4 +63,5 @@
    left join tbl_equipment_slot c on b.slot_code = c.slot_code
         where a.user_id = #{userId}
     </select>
+
 </mapper>

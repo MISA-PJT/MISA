@@ -7,6 +7,7 @@ import com.misa.equipment.dao.CharacterEquipmentMapper;
 import com.misa.item.dto.ItemDTO;
 import com.misa.monster.service.GameService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -59,5 +60,11 @@ public class CharacterService {
         statusDTO.setEquippedItems(equippedItems);
 
         return statusDTO;
+    }
+
+    // 캐릭터 정보 저장 메소드
+    @Transactional
+    public void saveCharacterState(CharacterDTO character) {
+        characterMapper.updateCharacterState(character);
     }
 }

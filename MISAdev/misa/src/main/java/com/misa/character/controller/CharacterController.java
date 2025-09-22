@@ -4,10 +4,7 @@ import com.misa.character.dto.CharacterDTO;
 import com.misa.character.dto.CharacterStatusDTO;
 import com.misa.character.service.CharacterService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/characters")
@@ -39,5 +36,12 @@ public class CharacterController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // 캐릭터 정보 저장 메소드 호출
+    @PostMapping("/save")
+    public ResponseEntity<Void> saveCharacterState(@RequestBody CharacterDTO characterState) {
+        characterService.saveCharacterState(characterState);
+        return ResponseEntity.ok().build();
     }
 }
