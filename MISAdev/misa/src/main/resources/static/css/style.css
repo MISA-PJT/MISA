@@ -138,3 +138,35 @@ body {
 #tombstone-image.hidden {
     display: none;
 }
+
+/* 사용자 메인 메뉴 스타일 */
+#menu-toggle-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 20;
+    padding: 10px 15px;
+    cursor: pointer;
+}
+
+#game-menu-ui {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid #888;
+    border-radius: 5px;
+    padding: 10px;
+    z-index: 10;
+}
+
+#game-menu-ui.hidden {
+    display: none;
+}
+
+#game-menu-ui button {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+}
