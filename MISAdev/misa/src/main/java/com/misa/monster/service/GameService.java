@@ -117,25 +117,22 @@ public class GameService {
             livePlayer.setCharacterAp(baseStats.getCharacterAp() + totalApBonus);
             livePlayer.setCharacterDp(baseStats.getCharacterDp() + totalDpBonus);
 
+            // DB에 저장된 현재 HP 가 있다면 그 값을 사용 -250923 사용자 정보 불러오기
             // 최초 접속 시에만 현재 HP를 최대 HP로 설정
             if (isInitialLoad) {
-                livePlayer.setCurrentHp(newMaxHp);
+                Integer savedHp = baseStats.getCurrentHp();
+
+                if (savedHp != null && savedHp > 0) {
+                    livePlayer.setCurrentHp(savedHp);
+                } else {
+                    livePlayer.setCurrentHp(newMaxHp);
+                }
             } else {
                 // 게임 중에는 현재 HP가 새로운 최대 HP를 넘지 않도록 보정
                 if (livePlayer.getCurrentHp() > newMaxHp) {
                     livePlayer.setCurrentHp(newMaxHp);
                 }
             }
-
-            // 최대 HP가 상승했다면, 현재 HP도 그 차이만큼 더해줌.
-//            if (newMaxHp > oldMaxHp) {
-//                livePlayer.setCurrentHp(livePlayer.getCurrentHp() + (newMaxHp - oldMaxHp));
-//            }
-
-            // 최대 HP가 변경되었다면, 현재 HP도 비율에 맞게 조정 후 최대치를 넘지 않도록 제한
-//            if (livePlayer.getCurrentHp() > newMaxHp) {
-//                livePlayer.setCurrentHp(newMaxHp);
-//            }
 
             System.out.println("능력치 적용 완료 : " + livePlayer);
 
@@ -166,7 +163,6 @@ public class GameService {
             }
         }
     }
-
 
     @PostConstruct  // GameService 빈(Bean)이 생성된 후 자동으로 실행
     public void init() {
