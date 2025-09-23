@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-//    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-security'  // Spring Security 핵심 보안 기능(인증, 인가 등)
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
@@ -28,7 +28,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.5'
-//    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.security:spring-security-test'  // Spring Security 보안 기능 코드 테스트
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 //    compileOnly 'org.projectlombok:lombok'    // lombok 미사용
 //    annotationProcessor 'org.projectlombok:lombok'    // lombok 미사용

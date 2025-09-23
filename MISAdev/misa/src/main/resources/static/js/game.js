@@ -1,5 +1,6 @@
 let monsters = [];  // 모든 몬스터 객체를 담을 배열
 let player;
+let isLoggedIn = false; // 로그인 상태를 관리
 let damageNumbers = []; // 데미지 숫자를 담을 배열 -250922 데미지 화면 표시 추가
 
 // Custom Map 미적용 오류 해결 : window.onload -> startGame function
@@ -9,6 +10,9 @@ function startGame() {
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    const loginUI = document.getElementById('login-ui');
+    const loginForm = document.getElementById('login-form');
+    const errorMsg = document.getElementById('login-error-msg');
 
     setTimeout(function () {
         // 2. 네이버 지도 초기화
@@ -51,6 +55,35 @@ function startGame() {
         const inventoryUI = document.getElementById('inventory-ui');
         const inventoryList = document.getElementById('inventory-list');
         const statusUI = document.getElementById('character-status-ui');
+
+        // 로그인 폼 이벤트 리스너 설정
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const userId = document.getElementById('userId').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: userId, password: password})
+                });
+
+                if (response.ok) {
+                    // 로그인 성공
+                    loginUI.classList.add('hidden');    // 로그인 창 숨기기
+                    isLoggedIn = true;
+                    await initializeGame(userId);
+
+                } else {
+                    // 로그인 실패
+                    errorMsg.textContent = "ID 또는 비밀번호가 일치하지 않습니다.";
+                }
+            } catch (error) {
+                console.error("로그인 요청 에러 : ", error);
+                errorMsg.textContent = "서버와 통신 중 오류가 발생했습니다.";
+            }
+        });
 
         function connectWebSocket() {
             // "ws://" 는 WebSocket 프로토콜
@@ -380,26 +413,45 @@ function startGame() {
             });
 
             // 사용자 캐릭터 정보 저장 및 종료 버튼 추가 -250922 사용자 정보 저장 추가
-            const exitButton = document.getElementById('save-exit-button');
-            exitButton.onclick = saveAndExit;
+            const menuToggleButton = document.getElementById('menu-toggle-button');
+            const gameMenuUI = document.getElementById('game-menu-ui');
 
             const saveButton = document.getElementById('save-button');
-            saveButton.onclick = saveGame;
+            const exitButton = document.getElementById('save-exit-button');
+            const characterInfoButton = document.getElementById('character-info-button');
+            const inventoryButton = document.getElementById('inventory-button');
+
+            menuToggleButton.onclick = () => {
+                gameMenuUI.classList.toggle('hidden');
+            };
+
+            saveButton.onclick = async () => {
+                await saveGame();
+                gameMenuUI.classList.add('hidden');
+            };
+
+            exitButton.onclick = saveAndExit;
+
+            characterInfoButton.onclick = () => {
+                toggleCharacterStatus();
+                gameMenuUI.classList.add('hidden');
+            };
+
+            inventoryButton.onclick = () => {
+                toggleInventory();
+                gameMenuUI.classList.add('hidden');
+            };
+
         }
 
         // 게임 로직 함수들 위치 이동 -250911
 
-        // 저장 및 종료 함수 -250922 사용자 정보 저장 추가
-        async function saveAndExit() {
-            console.log("Saving character state...");
-            if (socket) {
-                socket.close(); // WebSocket 연결부터 종료
-            }
-
+        // 저장 함수 - 250923 사용자 정보 저장 추가
+        async function saveGame() {
             try {
                 const response = await fetch('/api/characters/save', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userId: player.id,
                         currentHp: player.currentHp,
@@ -410,8 +462,9 @@ function startGame() {
 
                 if (response.ok) {
                     console.log("저장 완료");
-                    // TODO: 메인 페이지나 로그인 페이지로 리디렉션
                     alert("게임이 저장되었습니다.");
+                } else {
+                    alert("저장에 실패했습니다.");
                 }
             } catch (error) {
                 console.error("저장 중 에러 : ", error);
@@ -419,10 +472,41 @@ function startGame() {
             }
         }
 
+        // 저장 및 종료 함수 -250922 사용자 정보 저장 추가
+        async function saveAndExit() {
+            console.log("Saving character state...");
+            if (socket) {
+                socket.close(); // WebSocket 연결부터 종료
+            }
+            await saveGame();
+
+            // POST /logout 호출 (서버가 세션 처리 후 /login 으로 리디렉트)
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.redirected) {
+                    window.location.href = response.url; // 서버 리디렉트 실패 시 수동 이동
+                } else if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    console.error('Logout failed: ', response.status);
+                    alert('로그아웃 실패, 다시 시도하세요.');
+                }
+            } catch (error) {
+                console.error('Logout error : ', error);
+                alert('로그아웃 중 오류 : ' + error.message);
+            }
+        }
+
         // 사용자 데이터 로딩 함수 -250911
         async function loadPlayer(userId) {
             try {
-                const response = await fetch(`/api/characters/${userId}`);  // 서버 API 호출
+                // 서버 API 호출
+                const response = await fetch(`/api/characters/${userId}`, {
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) {
                     throw new Error(`캐릭터 정보를 찾을 수 없습니다. : ${response.status}`);
                 }
@@ -431,10 +515,10 @@ function startGame() {
                 // 서버에서 받은 데이터로 사용자 객체 생성
                 player = {
                     id: playerData.userId,
-                    lat: 37.563188,
-                    lng: 127.192642,
+                    lat: playerData.latitude || 37.563188,
+                    lng: playerData.longitude || 127.192642,
                     hp: playerData.characterHp,
-                    currentHp: playerData.currentHp,
+                    currentHp: playerData.currentHp != null ? playerData.currentHp : playerData.characterHp,
                     ap: playerData.characterAp,
                     dp: playerData.characterDp,
                     // 렌더링에 필요한 클라이언트 측 속성
@@ -495,7 +579,9 @@ function startGame() {
             // 인벤토리가 열렸을 때만 데이터 로드
             if (!inventoryUI.classList.contains('hidden')) {
                 try {
-                    const response = await fetch(`/api/inventory/${player.id}`);
+                    const response = await fetch(`/api/inventory/${player.id}`, {
+                        credentials: 'same-origin'
+                    });
                     const items = await response.json();
 
                     // 목록 초기화
@@ -673,7 +759,9 @@ function startGame() {
                 const statusData = await response.json();
 
                 // 능력치 정보 표시
-                const statsDiv = document.getElementById('character-stats');
+                const statsDiv = document.getElementById('character-stats', {
+                    credentials: 'same-origin'
+                });
                 statsDiv.innerHTML = `
                     <p>HP: ${statusData.currentHp} / ${statusData.characterHp}</p>
                     <p>AP: ${statusData.characterAp}</p>
@@ -733,7 +821,10 @@ function startGame() {
         // 몬스터 데이터 로딩 함수 (비동기) -250911
         async function loadMonsters() {
             try {
-                const response = await fetch('/api/monsters');  // 서버 API 호출
+                // 서버 API 호출
+                const response = await fetch('/api/monsters', {
+                    credentials: 'same-origin'
+                });
                 const serverMonsters = await response.json();
 
                 monsters = serverMonsters.map(data => ({
@@ -949,6 +1040,7 @@ function startGame() {
         // 5. 캐릭터 위치 및 맵 업데이트 함수 (LatLng 기반 리팩토링)
         // 몬스터 위치 계산 로직 추가 -250911
         function update() {
+            if (!isLoggedIn || !player) return;    // 사용자가 로드되지 않았으면 함수 종료 -250923 사용자 정보 불러오기
 
             // 사용자 피격 효과 추가 -250922
             const hitEffectDuration = 200;
@@ -1088,6 +1180,9 @@ function startGame() {
         // 6. 그리기 함수 (캔버스 픽셀 사용)
         // 몬스터 그리기 로직 추가 -250911
         function draw() {
+
+            if (!isLoggedIn || !player) return;    // 사용자가 로드되지 않았으면 함수 종료 -250923 사용자 정보 불러오기
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 1. 사용자 그리기
@@ -1359,11 +1454,11 @@ function startGame() {
         }
 
         // 게임 리소스 및 데이터 초기화 함수
-        async function initializeGame() {
-            // API를 통해 플레이어 데이터 로드 및 객체 생성
-            await loadPlayer("misa01");
+        async function initializeGame(userId) {
+            // API를 통해 사용자 데이터 로드 및 객체 생성
+            await loadPlayer(userId);
 
-            // 플레이어 객체가 성공적으로 생성된 후에만 다음 로직 실행
+            // 사용자 객체가 성공적으로 생성된 후에만 다음 로직 실행
             if (player) {
 
                 // 사용자 로딩 후 WebSocket 연결
@@ -1419,7 +1514,7 @@ function startGame() {
             }
         }
 
-    initializeGame();
+    // initializeGame(userId);
 
     }, 0);
 };
