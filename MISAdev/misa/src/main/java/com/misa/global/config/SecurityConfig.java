@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 // 로그인 페이지를 지정하고, 로그인 성공/실패 시의 동작을 정의
 
@@ -40,7 +39,6 @@ public class SecurityConfig {
                 // 종료 시 로그아웃 추가
                 .logout(logout -> logout
                         .logoutUrl("/logout")   // 로그아웃 엔드포인트
-//                        .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
                         .logoutSuccessUrl("/") // 로그아웃 성공 후 리디렉트
                         .invalidateHttpSession(true)    // 세션 무효화
                         .deleteCookies("JSESSIONID")    // 쿠키 삭제 (세션 쿠키)
@@ -48,7 +46,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         // 로그인 API, 게임 페이지, 정적 리소스는 인증 없이 허용
-                        .requestMatchers("/api/characters/**", "/api/monsters/**", "/game/**", "/api/inventory/**").permitAll()
+                        .requestMatchers("/api/characters/**", "/api/monsters/**", "/game/**", "/api/inventory/**", "/api/equipment/**").authenticated()
                         .requestMatchers("/", "/login/**","/index.html", "/favicon.ico", "/api/users/login","/css/**", "/js/**", "/images/**").permitAll()
                         .anyRequest().authenticated()   // 나머지 모든 요청은 인증 필요
                 );

@@ -136,7 +136,6 @@ public class GameService {
 
             System.out.println("능력치 적용 완료 : " + livePlayer);
 
-            // TODO: 변경된 능력치 정보를 해당 클라이언트에게 WebSocket 으로 전송
             // 해당 사용자의 WebSocket 세션을 조회
             WebSocketSession session = sessions.values().stream()
                     .filter(s -> userId.equals(s.getAttributes().get("userId")))

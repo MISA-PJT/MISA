@@ -3,7 +3,9 @@ package com.misa.character.controller;
 import com.misa.character.dto.CharacterDTO;
 import com.misa.character.dto.CharacterStatusDTO;
 import com.misa.character.service.CharacterService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,31 +18,34 @@ public class CharacterController {
         this.characterService = characterService;
     }
 
+    // userId 검증 로직 추가 -250924
     @GetMapping("/{userId}")
-    public ResponseEntity<CharacterDTO> findCharacterById(@PathVariable String userId) {
-        CharacterDTO character = characterService.findCharacterById(userId);
-
-        if (character != null) {
-            return ResponseEntity.ok(character);    // 데이터가 있으면 200 OK 와 함께 반환
-        } else {
-            return ResponseEntity.notFound().build();   // 데이터가 없으면 404 Not Found 반환
+    public ResponseEntity<CharacterDTO> findCharacterById(@PathVariable String userId, Authentication authentication) {
+        if (!userId.equals(authentication.getName())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+        CharacterDTO character = characterService.findCharacterById(userId);
+        return character != null ? ResponseEntity.ok(character) : ResponseEntity.notFound().build();
     }
 
     // 캐릭터 종합 정보 조회 메소드 호출
+    // userId 검증 로직 추가 -250924
     @GetMapping("/{userId}/status")
-    public ResponseEntity<CharacterStatusDTO> getCharacterStatus(@PathVariable String userId) {
-        CharacterStatusDTO status = characterService.getCharacterStatus(userId);
-        if (status != null) {
-            return ResponseEntity.ok(status);
-        } else {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<CharacterStatusDTO> getCharacterStatus(@PathVariable String userId, Authentication authentication) {
+        if (!userId.equals(authentication.getName())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+        CharacterStatusDTO status = characterService.getCharacterStatus(userId);
+        return status != null ? ResponseEntity.ok(status) : ResponseEntity.notFound().build();
     }
 
     // 캐릭터 정보 저장 메소드 호출
+    // userId 검증 로직 추가 -250924
     @PostMapping("/save")
-    public ResponseEntity<Void> saveCharacterState(@RequestBody CharacterDTO characterState) {
+    public ResponseEntity<Void> saveCharacterState(@RequestBody CharacterDTO characterState, Authentication authentication) {
+        if (!characterState.getUserId().equals(authentication.getName())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         characterService.saveCharacterState(characterState);
         return ResponseEntity.ok().build();
     }

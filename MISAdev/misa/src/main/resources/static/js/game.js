@@ -35,9 +35,7 @@ function startGame() {
         // 게임에 필요한 모든 객체들을 선언
         let playerImage = {};
         let playerAttackImage;
-        let weaponImage;
         let attackEffectImage;
-        let sword;
         const collisionPolygons = [];
         const keys = { w: false, a: false, s: false, d: false };
         // degree per pixel (줌 19 고정, 로그에서 계산)
@@ -57,6 +55,8 @@ function startGame() {
         const statusUI = document.getElementById('character-status-ui');
 
         // 로그인 폼 이벤트 리스너 설정
+        /* 로그인 폼에서 ID/PW를 알맞게 입력 후 '게임 시작' 버튼 클릭 시
+        *  입력한 ID/PW를 서버에 보내며 로그인 요청 이후 JSON 으로 응답 받음. */
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const userId = document.getElementById('userId').value;
@@ -70,10 +70,10 @@ function startGame() {
                 });
 
                 if (response.ok) {
-                    // 로그인 성공
+                    // 로그인 성공 시 로그인 UI를 숨기고 게임 초기화 함수 호출
                     loginUI.classList.add('hidden');    // 로그인 창 숨기기
                     isLoggedIn = true;
-                    await initializeGame(userId);
+                    await initializeGame(userId);       // 게임 초기화 함수 호출
 
                 } else {
                     // 로그인 실패
@@ -227,7 +227,6 @@ function startGame() {
 
                     }
                 }
-                // TODO: 서버가 보낸 데이터 종류에 따라 분기 처리 필요(예: 몬스터 위치 업데이트, 아이템 획득 알림 등)
             };
 
             // WebSocket 연결이 닫혔을 때 이벤트
@@ -445,7 +444,6 @@ function startGame() {
         }
 
         // 게임 로직 함수들 위치 이동 -250911
-
         // 저장 함수 - 250923 사용자 정보 저장 추가
         async function saveGame() {
             try {
@@ -537,9 +535,6 @@ function startGame() {
                     frameInterval: 1000 / 10,
                     collisionWidth: 50,
                     collisionHeight: 50,
-
-                    equippedWeapon: null, // 현재 장착한 무기 정보
-
                     isAttacking: false,
 
                     // 공격 애니메이션 프레임 속성 추가
@@ -759,9 +754,7 @@ function startGame() {
                 const statusData = await response.json();
 
                 // 능력치 정보 표시
-                const statsDiv = document.getElementById('character-stats', {
-                    credentials: 'same-origin'
-                });
+                const statsDiv = document.getElementById('character-stats');
                 statsDiv.innerHTML = `
                     <p>HP: ${statusData.currentHp} / ${statusData.characterHp}</p>
                     <p>AP: ${statusData.characterAp}</p>
@@ -932,7 +925,6 @@ function startGame() {
                 monster.lat += delta_lat;
                 monster.lng += delta_lng;
             }
-
         }
 
         // 몬스터의 상태를 업데이트하고 행동을 결정하는 함수 추가 -250912
@@ -949,23 +941,17 @@ function startGame() {
                 const distanceToPlayer = getDistance(monster.canvasX, monster.canvasY, player.canvasX, player.canvasY);
                 const now = Date.now(); // 현재 시간
 
-                // 디버깅 로그(테스트 후 비활성화)
-                // console.log(`Monster ${monster.name} state: ${monster.state}, distance: ${distanceToPlayer.toFixed(2)}, aggro: ${monster.aggroRange}`);
-
                 switch (monster.state) {
                     case 'idle':
                         if (distanceToPlayer < monster.aggroRange) {                // 사용자가 인식 범위에 들어오면 추격 시작
                             monster.state = 'chase';
-                            console.log(`${monster.name} aggro triggered! Starting chase.`);    // 디버깅 로그(테스트 후 비활성화)
                         }
                         break;
                     case 'chase':
                         if (distanceToPlayer < monster.attackRange) {               // 사용자가 공격 범위에 들어오면 공격
                             monster.state = 'attack';                            // 몬스터 공격 상태 구현 후 활성화
-                            console.log(`${monster.name} entering attack range`);   // 디버깅 로그(테스트 후 비활성화)
                         } else if (distanceToPlayer > monster.aggroRange * 1.5) {   // 사용자가 너무 멀어지면 추격 중지
                             monster.state = 'idle';
-                            console.log(`${monster.name} lost sight, back to idle`);    // 디버깅 로그(테스트 후 비활성화)
                         } else {                                                    // 사용자를 향해 이동
                             moveMonsterTowardsPlayer(monster);
                         }
@@ -994,7 +980,6 @@ function startGame() {
                         } else {
                             // 공격 범위를 벗어나면 chase로 복귀
                             monster.state = 'chase';
-                            console.log(`${monster.name} out of attack range, resuming chase`);
                         }
                         break;
 
@@ -1004,7 +989,6 @@ function startGame() {
                         if (monster.alpha <= 0) {
                             monster.alpha = 0;
                             monster.state = 'dead'; // 투명도가 0이되면 'dead' 상태로 변경
-
                         }
                         break;
                 }
@@ -1056,9 +1040,6 @@ function startGame() {
             const moveX = (keys.a ? -player.speed : 0) + (keys.d ? player.speed : 0);
             const moveY = (keys.w ? -player.speed : 0) + (keys.s ? player.speed : 0);
             player.moving = (moveX !== 0 || moveY !== 0);
-
-            // 수정 : 캐릭터가 멈춰있어도 맵 패닝이 필요하므로 return 제거
-            // if (!player.moving) return; // 팬닝 중 이동 스킵 -> 이동 로직 항상 실행
 
             // 새 LatLng 계산
             const delta_lng = moveX * delta_lng_per_pixel;
@@ -1139,7 +1120,6 @@ function startGame() {
                 }
             }
 
-            // LatLng -> 캔버스 픽셀 계산 및 맵 패닝 대체
             // 맵의 중심을 항상 사용자의 새로운 LatLng 좌표로 설정
             map.setCenter(new naver.maps.LatLng(player.lat, player.lng));
 
@@ -1226,8 +1206,6 @@ function startGame() {
                         imageToDraw,
                         frameToDraw * player.width, // 가로 프레임 선택
                         0,                          // 세로 프레임 없음(이미지 한 줄)
-                        // (player.directionOffsetX + frameToDraw) * player.width,
-                        // player.frameY * player.height,
                         player.width,
                         player.height,
                         player.canvasX - player.displayWidth / 2,
@@ -1236,100 +1214,7 @@ function startGame() {
                         player.displayHeight
                     );
                     ctx.restore();
-
                 }
-
-                // // 무기를 장착했다면 무기 그리기 (공격 중에도 계속 그림)
-                // if (player.equippedWeapon) {
-                //     const weapon = player.equippedWeapon;
-                //     let weaponOffsetX = 0;
-                //     let weaponOffsetY = 0;
-                //
-                //     // 사용자 방향에 따라 무기 위치 조정
-                //     if (player.frameY === 0) {
-                //         weaponOffsetX = player.displayWidth * -0.5;
-                //         weaponOffsetY = player.displayHeight * 0.0;
-                //     } else if (player.frameY === 1) {
-                //         weaponOffsetX = -player.displayWidth * 0.35;
-                //         weaponOffsetY = player.displayHeight * 0.0;
-                //     } else if (player.frameY === 2) {
-                //         weaponOffsetX = player.displayWidth * 0.5;
-                //         weaponOffsetY = player.displayHeight * 0.0;
-                //     } else if (player.frameY === 3) {
-                //         weaponOffsetX = player.displayWidth * 0.6;
-                //         weaponOffsetY = player.displayHeight * -0.1;
-                //     }
-                //
-                //     // 사용자 방향에 따라 무기 스프라이트 인덱스 설정
-                //     let weaponSpriteIndex = 0;
-                //     if (player.frameY === 2 || player.frameY === 3) {
-                //         weaponSpriteIndex = 1;
-                //     }
-                //
-                //     // 캔버스 상태 저장
-                //     ctx.save();
-                //
-                //     // 회전축 설정 및 이동 (무기 이미지의 중심으로 이동)
-                //     // 무기가 그려질 최종 위치 계산
-                //     const drawX = player.canvasX + weaponOffsetX;
-                //     const drawY = player.canvasY + weaponOffsetY;
-                //
-                //     // 회전 중심점 (Pivot Point): 무기 표시 너비와 높이의 절반을 더함
-                //     const pivotX = drawX + weapon.displayWidth / 2;
-                //     const pivotY = drawY + weapon.displayHeight / 2;
-                //
-                //     ctx.translate(pivotX, pivotY);
-                //
-                //     // 공격 중일 때 회전 적용
-                //     if (player.isAttacking) {
-                //         let rotationAngle = 0;
-                //         let finalTranslateX = 0;    // 회전 후 추가로 이동할 X 좌표
-                //         let finalTranslateY = 0;    // 회전 후 추가로 이동할 Y 좌표
-                //
-                //         // 공격 방향에 따라 회전 각도 및 이동 값 설정
-                //         if(player.attackDirection === 'down') {
-                //             rotationAngle = Math.PI / -1.3; // 아래 방향은 기본 각도
-                //             finalTranslateX = -weapon.displayWidth * 0.75;
-                //             finalTranslateY = weapon.displayHeight * -0.35;
-                //         } else if (player.attackDirection === 'left') {
-                //             rotationAngle = -Math.PI / 3.5;
-                //             finalTranslateX = -weapon.displayWidth * 0.3;
-                //             finalTranslateY = -weapon.displayHeight * -0.3;
-                //         } else if (player.attackDirection === 'right') {
-                //             rotationAngle = Math.PI / 3.5;
-                //             finalTranslateX = weapon.displayWidth * 0.4;
-                //             finalTranslateY = -weapon.displayHeight * -0.1;
-                //         } else if (player.attackDirection === 'up') {
-                //             rotationAngle = Math.PI / -3.8;
-                //             finalTranslateX = -weapon.displayWidth * -0.1;
-                //             finalTranslateY = -weapon.displayHeight * 0.4;
-                //         }
-                //
-                //         ctx.rotate(rotationAngle);
-                //         ctx.translate(finalTranslateX, finalTranslateY);    // 회전 후 추가 위치 조정
-                //     }
-                //
-                //     // 무기 그리기
-                //     // translate로 좌표계를 이동했기 때문에, 이미지는 회전축 중심(0,0) 기준으로 그려야 함.
-                //     // pivotX/pivotY를 기준으로 이미지를 중앙에 위치시키려면 (-width/2, -height/2) 위치에 그림.
-                //     ctx.drawImage(
-                //         weapon.image,
-                //         weaponSpriteIndex * weapon.width,
-                //         0,
-                //         weapon.width,
-                //         weapon.height,
-                //         -weapon.displayWidth / 2,
-                //         -weapon.displayHeight / 2,
-                //         // player.canvasX + weaponOffsetX,
-                //         // player.canvasY + weaponOffsetY,
-                //         weapon.displayWidth,    // 무기의 표시 크기
-                //         weapon.displayHeight
-                //     );
-                //
-                //     // 캔버스 상태 복원
-                //     ctx.restore();
-                // }
-
             }
 
             // 몬스터 그리기
@@ -1426,7 +1311,6 @@ function startGame() {
                 }
                 player.frameTimer = 0;
             }
-
         }
 
         // 사용자 공격 애니메이션 처리 함수
@@ -1476,22 +1360,6 @@ function startGame() {
                     });
                 });
 
-                // 무기 이미지
-                weaponImage = new Image();
-                weaponImage.src = '/images/sword2.png';
-
-                // 무기 정보 객체 생성
-                sword = {
-                    image: weaponImage,
-                    width: 1024,
-                    height: 1024,
-                    displayWidth: 44.8,
-                    displayHeight: 44.8
-                };
-
-                // 게임 시작 시 무기 기본 장착(테스트용)
-                player.equippedWeapon = sword;
-
                 // 충돌 영역 초기화
                 initializeCollision();
 
@@ -1510,11 +1378,7 @@ function startGame() {
 
                 // 모든 준비가 끝나면 게임 루프 시작
                 gameLoop(0);
-
             }
         }
-
-    // initializeGame(userId);
-
     }, 0);
 };

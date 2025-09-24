@@ -11,9 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CharacterEquipmentService {
 
-    // TODO: InventoryMapper, CharacterEquipmentMapper, ItemMapper 등 주입 필요
     private final CharacterEquipmentMapper equipmentMapper;
-//    private final InventoryMapper inventoryMapper;
     private final InventoryService inventoryService;
     private final ItemMapper itemMapper;
     private final GameService gameService;
@@ -78,14 +76,6 @@ public class CharacterEquipmentService {
         // GameService에 능력치 재계산 요청
         gameService.recalculatePlayerStats(userId, false);
 
-        /* TODO:
-        *   1. 아이템 정보 조회 (장착 부위, 능력치 등)
-        *   2. 사용자 인벤토리에 해당 아이템이 있는지 확인
-        *   3. 같은 부위에 이미 다른 아이템을 착용하고 있다면 해제
-        *   4. 새 아이템을 tbl_character_equipment에 추가
-        *   5. 인벤토리에서 사용한 아이템 제거 또는 수량 감소
-        *   6. 사용자의 실시간 능력치 업데이트 (GameService 연동)
-        * */
     }
 
     @Transactional
@@ -112,6 +102,5 @@ public class CharacterEquipmentService {
         // GameService에 능력치 재계산 요청
         gameService.recalculatePlayerStats(userId, false);
 
-        // TODO: GameService와 연동하여 사용자의 실시간 능력치 업데이트
     }
 }
