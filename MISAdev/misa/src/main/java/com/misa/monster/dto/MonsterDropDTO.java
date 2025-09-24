@@ -1,10 +1,5 @@
 package com.misa.monster.dto;
 
-//@Getter
-//@Setter
-//@ToString
-//@NoArgsConstructor
-//@AllArgsConstructor
 public class MonsterDropDTO {
 
     private String itemCode;

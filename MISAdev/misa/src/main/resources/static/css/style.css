@@ -186,6 +186,27 @@ body {
     text-align: center;
 }
 
+#login-form div {
+    display: grid;
+    grid-template-columns: 40px 1fr;    /* 라벨 너비 80px, 입력창은 나머지 공간 모두 사용 */
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#login-form label {
+    text-align: right;
+    margin-right: 10px;     /* 라벨과 입력창 사이의 간격 */
+}
+
+#login-form input {
+    padding: 5px;
+}
+
+#login-form button {
+    margin-top: 15px;
+    padding: 8px 16px;
+}
+
 .hidden{
     display: none;
 }
