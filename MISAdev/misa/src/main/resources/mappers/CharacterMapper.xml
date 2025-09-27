@@ -12,6 +12,8 @@
         <result property="currentHp" column="current_hp"/>
         <result property="latitude" column="latitude"/>
         <result property="longitude" column="longitude"/>
+        <result property="characterLevel" column="character_level"/>
+        <result property="characterExp" column="character_exp"/>
     </resultMap>
 
     <select id="findCharacterById" resultMap="characterResultMap" parameterType="string">
@@ -22,16 +24,35 @@
                character_dp,
                current_hp,
                latitude,
-               longitude
+               longitude,
+               character_level,
+               character_exp
           from tbl_character
          where user_id = #{userId}
     </select>
 
     <update id="updateCharacterState" parameterType="com.misa.character.dto.CharacterDTO">
         update tbl_character
-        set current_hp = #{currentHp},
+        set
+            current_hp = #{currentHp},
             latitude = #{latitude},
             longitude = #{longitude}
         where user_id = #{userId}
+    </update>
+
+    <update id="updateCharacterBaseStats" parameterType="com.misa.character.dto.CharacterDTO">
+        update tbl_character
+           set character_hp = #{characterHp},
+               character_ap = #{characterAp},
+               character_dp = #{characterDp},
+               character_level = #{characterLevel},
+               character_exp = #{characterExp}
+         where user_id = #{userId}
+    </update>
+
+    <update id="updateCharacterExp">
+        update tbl_character
+           set character_exp = #{characterExp}
+         where user_id = #{userId}
     </update>
 </mapper>

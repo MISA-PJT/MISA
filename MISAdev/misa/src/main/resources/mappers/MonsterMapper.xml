@@ -17,6 +17,7 @@
         <result property="hp" column="monster_hp"/>
         <result property="ap" column="monster_ap"/>
         <result property="dp" column="monster_dp"/>
+        <result property="monsterExp" column="monster_exp"/>
         <result property="latitude" column="latitude"/>
         <result property="longitude" column="longitude"/>
         <collection property="dropList" resultMap="monsterDropResultMap"/>
@@ -30,6 +31,7 @@
               a.monster_hp,
               a.monster_ap,
               a.monster_dp,
+              a.monster_exp,
               b.latitude,
               b.longitude,
               c.item_code,

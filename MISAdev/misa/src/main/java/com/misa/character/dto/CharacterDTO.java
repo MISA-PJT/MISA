@@ -13,9 +13,13 @@ public class CharacterDTO {
     private double longitude;
     private int currentHp;
 
+    // 캐릭터 레벨 시스템 추가
+    private int characterLevel;
+    private int characterExp;
+
     public CharacterDTO() {}
 
-    public CharacterDTO(String userId, int characterHp, int characterAp, int characterDp, double latitude, double longitude, int currentHp) {
+    public CharacterDTO(String userId, int characterHp, int characterAp, int characterDp, double latitude, double longitude, int currentHp, int characterLevel, int characterExp) {
         this.userId = userId;
         this.characterHp = characterHp;
         this.characterAp = characterAp;
@@ -23,6 +27,8 @@ public class CharacterDTO {
         this.latitude = latitude;
         this.longitude = longitude;
         this.currentHp = currentHp;
+        this.characterLevel = characterLevel;
+        this.characterExp = characterExp;
     }
 
     // 복사 생성자
@@ -34,6 +40,8 @@ public class CharacterDTO {
         this.currentHp = original.characterHp;
         this.latitude = 0;
         this.longitude = 0;
+        this.characterLevel = original.characterLevel;
+        this.characterExp = original.characterExp;
     }
 
     public String getUserId() {
@@ -92,6 +100,22 @@ public class CharacterDTO {
         this.currentHp = currentHp;
     }
 
+    public int getCharacterLevel() {
+        return characterLevel;
+    }
+
+    public void setCharacterLevel(int characterLevel) {
+        this.characterLevel = characterLevel;
+    }
+
+    public int getCharacterExp() {
+        return characterExp;
+    }
+
+    public void setCharacterExp(int characterExp) {
+        this.characterExp = characterExp;
+    }
+
     @Override
     public String toString() {
         return "CharacterDTO{" +
@@ -102,6 +126,8 @@ public class CharacterDTO {
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
                 ", currentHp=" + currentHp +
+                ", characterLevel=" + characterLevel +
+                ", characterExp=" + characterExp +
                 '}';
     }
 }

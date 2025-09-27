@@ -25,9 +25,12 @@ public class MonsterDTO {
     private double latitude;
     private double longitude;
 
+    // 몬스터 경험치 추가
+    private int monsterExp;
+
     public MonsterDTO() {}
 
-    public MonsterDTO(int spawnId, String monsterCode, String monsterName, int hp, int ap, int dp, String state, List<MonsterDropDTO> dropList, double latitude, double longitude) {
+    public MonsterDTO(int spawnId, String monsterCode, String monsterName, int hp, int ap, int dp, String state, List<MonsterDropDTO> dropList, double latitude, double longitude, int monsterExp) {
         this.spawnId = spawnId;
         this.monsterCode = monsterCode;
         this.monsterName = monsterName;
@@ -38,6 +41,7 @@ public class MonsterDTO {
         this.dropList = dropList;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.monsterExp = monsterExp;
     }
 
     public String getState() {
@@ -120,6 +124,14 @@ public class MonsterDTO {
         this.longitude = longitude;
     }
 
+    public int getMonsterExp() {
+        return monsterExp;
+    }
+
+    public void setMonsterExp(int monsterExp) {
+        this.monsterExp = monsterExp;
+    }
+
     @Override
     public String toString() {
         return "MonsterDTO{" +
@@ -133,6 +145,7 @@ public class MonsterDTO {
                 ", dropList=" + dropList +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
+                ", monsterExp=" + monsterExp +
                 '}';
     }
 
@@ -148,5 +161,6 @@ public class MonsterDTO {
         this.latitude = original.latitude;
         this.longitude = original.longitude;
         this.state = "idle";
+        this.monsterExp = original.monsterExp;;
     }
 }
