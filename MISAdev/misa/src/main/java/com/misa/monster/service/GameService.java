@@ -268,6 +268,11 @@ public class GameService {
                         // DB 조회 대신, 메모리에 있는 원본 몬스터 데이터 사용
                         MonsterDTO originalMonster = monsterPrototypes.get(targetSpawnId);
                         if (originalMonster != null) {
+
+                            // 경험치 부여 및 레벨업 체크 메소드 호출
+                            grantExpAndCheckLevelUp(attackerId, originalMonster.getMonsterExp());
+
+                            // 몬스터 리스폰 로직
                             scheduleRespawn(targetSpawnId, originalMonster);
 
                             // 몬스터 아이템 드랍 로직 -250915
@@ -376,5 +381,52 @@ public class GameService {
                 System.out.println("s.sendMessage 실패");
             }
         });
+    }
+
+    // 경험치 부여 및 레벨업 처리 메소드 추가 -250928
+    public void grantExpAndCheckLevelUp(String userId, int monsterExp) {
+        CharacterDTO livePlayer = getLivePlayer(userId);
+        if (livePlayer == null) return;
+
+        livePlayer.setCharacterExp(livePlayer.getCharacterExp() + monsterExp);
+        System.out.println(userId + " 님이 경험치 " + monsterExp + "획득!");
+
+        // 레벨업에 필요한 경험치 설정
+        int requiredExp = livePlayer.getCharacterLevel() * 200;
+
+        // 레벨업 체크 (경험치가 충분하면 레벨업)
+        if (livePlayer.getCharacterExp() >= requiredExp) {
+
+            // DB 에서 현재 캐릭터의 순수 기본 능력치를 추출
+            CharacterDTO baseStats = characterMapper.findCharacterById(userId);
+
+            // 새로운 레벨과 남은 경험치 계산
+            int newLevel = baseStats.getCharacterLevel() + 1;
+            int remainingExp = livePlayer.getCharacterExp() - requiredExp;
+
+            // DB 업데이트용 DTO 설정
+            baseStats.setCharacterLevel(newLevel);
+            baseStats.setCharacterExp(remainingExp);
+
+            // 순수 기본 능력치에 레벨업 보너스를 더함.
+            baseStats.setCharacterHp(baseStats.getCharacterHp() + 10);
+            baseStats.setCharacterAp(baseStats.getCharacterAp() + 1);
+            baseStats.setCharacterDp(baseStats.getCharacterDp() + 1);
+            characterMapper.updateCharacterBaseStats(baseStats);
+
+            // 실시간 사용자 객체도 갱신
+            livePlayer.setCharacterLevel(newLevel);
+            livePlayer.setCharacterExp(remainingExp);
+
+            System.out.println("레벨업! " + userId + " 님이 " + newLevel + " 레벨이 되었습니다.");
+
+            // 변경된 기본 능력치를 DB에 저장
+        } else {
+            // 레벨업 하지 않았다면, 현재 경험치만 DB에 저장
+            characterMapper.updateCharacterExp(userId, livePlayer.getCharacterExp());
+        }
+
+        // 변경된 모든 스탯(장비 포함)을 클라이언트에 전송
+        recalculatePlayerStats(userId, false);
     }
 }
